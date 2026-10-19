@@ -36,7 +36,7 @@ object CaptureOptions {
         else -> f.toInt().toString()
     }
 
-    fun fLabel(f: Double?): String = if (f == null) "–" else "f/" + (if (f == Math.floor(f) && f >= 4) f.toInt().toString() else f.toString())
+    fun fLabel(f: Double?): String = if (f == null) "–" else "f/" + (if (f == Math.floor(f)) f.toInt().toString() else f.toString())
 
     fun ndLabel(nd: String): String {
         val stops = ND.firstOrNull { it.first == nd }?.second ?: return nd.ifBlank { "sin nd" }
