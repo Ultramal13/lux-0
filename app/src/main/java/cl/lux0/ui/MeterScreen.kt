@@ -115,15 +115,7 @@ fun Viewfinder(vm: MeterViewModel, size: Int, active: Boolean, retry: Int, onVie
                     onView(this)
                 }
             },
-            update = { tv ->
-                val m = if (p.red) ColorMatrix(floatArrayOf(
-                    0.3f, 0.59f, 0.11f, 0f, 0f,
-                    0f, 0f, 0f, 0f, 0f,
-                    0f, 0f, 0f, 0f, 0f,
-                    0f, 0f, 0f, 1f, 0f,
-                )) else ColorMatrix().apply { setSaturation(0f) }
-                tv.setRenderEffect(RenderEffect.createColorFilterEffect(ColorMatrixColorFilter(m)))
-            },
+            update = { tv -> tv.setRenderEffect(viewfinderEffect(p.red)) },
             modifier = Modifier.fillMaxSize(),
         )
         Canvas(Modifier.fillMaxSize()) {
@@ -140,6 +132,34 @@ fun Viewfinder(vm: MeterViewModel, size: Int, active: Boolean, retry: Int, onVie
         }
     }
 }
+
+/**
+ * Solo para mirar: la imagen de medición es lineal y con −1 EV, así que se ve muy oscura.
+ * El visor la aclara (×2 y curva gamma 2.2) y la pasa a gris (o a rojo en noche roja).
+ */
+private const val VIEWFINDER_AGSL = """
+    uniform shader content;
+    uniform float red;
+    half4 main(float2 p) {
+        half4 c = content.eval(p);
+        float l = dot(float3(c.rgb), float3(0.299, 0.587, 0.114));
+        l = pow(clamp(l * 2.0, 0.0, 1.0), 0.4545);
+        return red > 0.5 ? half4(half(l * 0.85), 0.0, 0.0, 1.0) : half4(half(l), half(l), half(l), 1.0);
+    }
+"""
+
+private fun viewfinderEffect(red: Boolean): RenderEffect =
+    if (android.os.Build.VERSION.SDK_INT >= 33) {
+        val shader = android.graphics.RuntimeShader(VIEWFINDER_AGSL)
+        shader.setFloatUniform("red", if (red) 1f else 0f)
+        RenderEffect.createRuntimeShaderEffect(shader, "content")
+    } else {
+        // Android 12: sin sombreadores; ganancia fija como aproximación.
+        val g = 2.5f
+        val m = if (red) floatArrayOf(0.3f * g, 0.59f * g, 0.11f * g, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 0f, 1f, 0f)
+        else floatArrayOf(0.3f * g, 0.59f * g, 0.11f * g, 0f, 0f, 0.3f * g, 0.59f * g, 0.11f * g, 0f, 0f, 0.3f * g, 0.59f * g, 0.11f * g, 0f, 0f, 0f, 0f, 0f, 1f, 0f)
+        RenderEffect.createColorFilterEffect(ColorMatrixColorFilter(ColorMatrix(m)))
+    }
 
 private fun kFraction(k: Double): Float =
     ((ColorMath.mired(2000.0) - ColorMath.mired(k)) / (ColorMath.mired(2000.0) - ColorMath.mired(10000.0)))
@@ -234,13 +254,13 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
     }
 }
 
+/** Fuente de medición: tres botones directos. */
 @Composable
-fun KnobRow(vm: MeterViewModel, version: Int) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-        Knob(0, "fuente", true) { vm.stepSource(it) }
-        Knob(1, "intervalo ${vm.prefs.intervalMs / 1000.0} s".replace(".0 s", " s"), true) { vm.stepInterval(it) }
-        Knob(2, if (vm.prefs.tintFormat == "duv") "tinte duv" else "tinte cám", true) { vm.toggleTintFormat() }
-        Knob(3, "objetivo", false) {}
+fun SourceRow(st: UiState, onSelect: (Int) -> Unit) {
+    val p = LocalPalette.current
+    Column(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 10.dp)) {
+        Text("fuente de medición", style = mono(11, p.text))
+        Seg(SOURCES, st.source, onSelect, Modifier.padding(top = 5.dp))
     }
 }
 

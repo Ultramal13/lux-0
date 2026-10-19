@@ -126,6 +126,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     /** Hold congela la lectura y apaga la cámara (el visor la vuelve a encender al soltar). */
     fun toggleHold() = _state.update { it.copy(hold = !it.hold) }
     fun stepSource(d: Int) = _state.update { it.copy(source = (it.source + d).mod(SOURCES.size)) }
+    fun setSource(i: Int) = _state.update { it.copy(source = i) }
 
     fun cycleTheme() {
         val order = listOf("auto", "claro", "oscuro", "rojo")
@@ -186,7 +187,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
         val sb = StringBuilder("${rec.kLow}–${rec.kHigh} · ${rec.kSet}")
         if (prefs.tintFormat == "duv") sb.append(" · ").append(String.format(Locale.US, "%+.3f", r.duv))
         else if (rec.tintLabel != null) sb.append(" · ≈").append(rec.tintLabel)
-        else if (p.tint == TintSystem.NONE && abs(r.duv) > 0.006) sb.append(" · tinte!")
+        else if (p.tint == TintSystem.NONE && abs(r.duv) > 0.006) sb.append(" · ⚠")
         return sb.toString()
     }
 

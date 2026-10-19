@@ -12,6 +12,9 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -49,7 +52,7 @@ import cl.lux0.ui.Claro
 import cl.lux0.ui.Header
 import cl.lux0.ui.HistoryPanel
 import cl.lux0.ui.KeyGrid
-import cl.lux0.ui.KnobRow
+import cl.lux0.ui.SourceRow
 import cl.lux0.ui.LocalPalette
 import cl.lux0.ui.MeterViewModel
 import cl.lux0.ui.NocheRojo
@@ -66,6 +69,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun App(vm: MeterViewModel = viewModel()) {
     val st by vm.state.collectAsState()
@@ -99,7 +103,7 @@ fun App(vm: MeterViewModel = viewModel()) {
                     Text("lux-0 necesita la cámara para medir.\nvuelve a abrir la app para dar el permiso.", style = mono(13, palette.screenText))
                 }
                 if (st.mode == 1) Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
-                    KnobRow(vm, st.version)
+                    SourceRow(st, vm::setSource)
                     CameraCards(vm, st.version)
                 }
                 else Box(Modifier.weight(1f)) { CalibrationPanel(vm, st) }
@@ -108,6 +112,8 @@ fun App(vm: MeterViewModel = viewModel()) {
             } else {
                 SettingsPanel(vm, st, Modifier.weight(1f))
             }
+            // Con el teclado abierto se ocultan las teclas para que no se encimen con lo que se escribe.
+            if (!WindowInsets.isImeVisible) {
             Spacer(Modifier.height(8.dp))
             KeyGrid(st.mode) { vm.setMode(it) }
             Row(Modifier.padding(top = 7.dp), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
@@ -115,6 +121,7 @@ fun App(vm: MeterViewModel = viewModel()) {
                 WideKey("● guardar", true, Modifier.weight(1f)) {
                     vm.save(textureView?.takeIf { it.isAvailable }?.getBitmap(256, 256))
                 }
+            }
             }
         }
     }

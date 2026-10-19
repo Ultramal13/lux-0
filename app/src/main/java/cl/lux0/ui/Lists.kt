@@ -172,14 +172,19 @@ private fun CaptureEditor(vm: MeterViewModel, slot: Int) {
         f.replace(',', '.').toDoubleOrNull(), nd,
     ))
     Column {
-        Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
-            Field(iso, { iso = it; commit() }, 62, true, "iso")
-            Field(fps, { fps = it; commit() }, 52, true, "fps")
-            Field(sh, { sh = it; commit() }, 62, false, "1/50")
-            Field(f, { f = it; commit() }, 48, true, "f/")
-            Field(nd, { nd = it; commit() }, 58, false, "nd")
+        // Dos filas para que quepa dentro de la ventana de edición.
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Field(iso, { iso = it; commit() }, 72, true, "iso")
+            Field(fps, { fps = it; commit() }, 60, true, "fps")
+            Field(sh, { sh = it; commit() }, 80, false, "1/50")
         }
-        Text("iso · fps · obturación (1/50 o 180°) · f/ · nd", style = mono(9, p.text.copy(alpha = 0.6f)))
+        Text("iso · fps · obturación (1/50 o 180°)", style = mono(9, p.text.copy(alpha = 0.6f)),
+            modifier = Modifier.padding(bottom = 8.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+            Field(f, { f = it; commit() }, 72, true, "f/")
+            Field(nd, { nd = it; commit() }, 80, false, "nd 0.6")
+        }
+        Text("diafragma · filtro nd", style = mono(9, p.text.copy(alpha = 0.6f)))
     }
 }
 
@@ -254,6 +259,7 @@ fun CustomCameraDialog(vm: MeterViewModel, onDone: () -> Unit) {
 fun CameraCards(vm: MeterViewModel, version: Int) {
     val p = LocalPalette.current
     var custom by remember { mutableStateOf(false) }
+    var editing by remember { mutableStateOf(0) }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         listOf(1, 2).forEach { slot ->
             val cam = vm.cam(slot)
@@ -281,10 +287,22 @@ fun CameraCards(vm: MeterViewModel, version: Int) {
                         }
                     }
                 }
-                Box(Modifier.padding(top = 6.dp)) { CaptureEditor(vm, slot) }
+                // Resumen de captura; al tocarlo se edita en una ventana con espacio para el teclado.
+                val cap = if (slot == 1) vm.prefs.cap1 else vm.prefs.cap2
+                Text(
+                    "${cap.iso} iso · ${cl.lux0.data.fpsLabel(cap.fps)}p · ${cap.shutter} · f/${cap.fStop ?: "–"} · nd ${cap.nd.ifBlank { "–" }}  ✎",
+                    style = mono(12, p.keyText),
+                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp).clickable { editing = slot }.padding(vertical = 4.dp),
+                )
             }
         }
         Text("* datos sin verificar con el fabricante", style = mono(9, p.text.copy(alpha = 0.6f)))
     }
     if (custom) CustomCameraDialog(vm) { custom = false }
+    if (editing != 0) {
+        val slot = editing
+        Dialog("captura cámara $slot · ${vm.cam(slot).label}", { editing = 0; vm.bump() }, "listo", { editing = 0; vm.bump() }) {
+            CaptureEditor(vm, slot)
+        }
+    }
 }
