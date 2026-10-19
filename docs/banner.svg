@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 400" width="1280" height="400" role="img" aria-label="LUX-0 — medidor de luz para foto y video">
+  <rect width="1280" height="400" rx="28" fill="#0B0B0C"/>
+  <!-- Logo: el 0 en Morse son cinco rayas (−−−−−), en anillo, con un punto de luz al centro -->
+  <g fill="none" stroke="#F2F2EE" stroke-width="20" stroke-linecap="round">
+    <path d="M172.64,124.84 A80,80 0 0,1 227.36,124.84"/>
+    <path d="M263.04,150.76 A80,80 0 0,1 279.96,202.8"/>
+    <path d="M266.32,244.72 A80,80 0 0,1 222.04,276.88"/>
+    <path d="M177.96,276.88 A80,80 0 0,1 133.68,244.72"/>
+    <path d="M120.04,202.8 A80,80 0 0,1 136.96,150.76"/>
+  </g>
+  <circle cx="200" cy="200" r="16" fill="#FF5A1F"/>
+  <!-- Nombre y descripción -->
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+    <text x="360" y="178" font-size="104" font-weight="700" fill="#F2F2EE" letter-spacing="-2">lux-0</text>
+    <text x="364" y="228" font-size="26" fill="#B9B9B4">medidor de luz para foto y video · android</text>
+    <text x="364" y="266" font-size="20" fill="#6E6E6A">kelvin · tinte · balance de blancos para tus cámaras</text>
+    <text x="1196" y="72" font-size="18" fill="#6E6E6A" text-anchor="end">.-.. ..- -..-  -....-  -----</text>
+    <text x="1196" y="356" font-size="18" fill="#FF5A1F" text-anchor="end">● en desarrollo · etapa 1</text>
+  </g>
+  <!-- Escala de puntos como la de la app, con marcador -->
+  <g fill="#FFB46B">
+    <circle cx="368" cy="320" r="3"/><circle cx="388" cy="320" r="3"/><circle cx="408" cy="320" r="3"/><circle cx="428" cy="320" r="3"/>
+    <circle cx="448" cy="320" r="3"/><circle cx="468" cy="320" r="3"/><circle cx="488" cy="320" r="3"/><circle cx="508" cy="320" r="3"/>
+    <circle cx="528" cy="320" r="3"/><circle cx="548" cy="320" r="3"/><circle cx="568" cy="320" r="3"/><circle cx="588" cy="320" r="3"/>
+    <circle cx="608" cy="320" r="3"/><circle cx="628" cy="320" r="3"/><circle cx="648" cy="320" r="3"/><circle cx="668" cy="320" r="3"/>
+    <circle cx="688" cy="320" r="3"/><circle cx="708" cy="320" r="3"/><circle cx="728" cy="320" r="3"/><circle cx="748" cy="320" r="3"/>
+    <circle cx="768" cy="320" r="3"/><circle cx="788" cy="320" r="3"/><circle cx="808" cy="320" r="3"/><circle cx="828" cy="320" r="3"/>
+  </g>
+  <rect x="682" y="304" width="5" height="32" rx="2" fill="#F2F2EE"/>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="14" fill="#6E6E6A">
+    <text x="364" y="356">2000</text><text x="560" y="356">3200</text><text x="740" y="356">5600 k</text>
+  </g>
+</svg>
