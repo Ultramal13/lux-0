@@ -5,3 +5,4 @@ local.properties
 .superpowers/
 *.apk
 .kotlin/
+.DS_Store
