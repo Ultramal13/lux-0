@@ -13,7 +13,7 @@ Antes de cambiar algo, lee:
 - `COMO-FUNCIONA.txt`: resumen técnico.
 
 ## Reglas del proyecto (obligatorias)
-- **Todo lo visible en español**: textos de la app, mensajes de commit y respuestas. En la app, los textos van en minúscula con estilo de aparato ("01 color", "hold", "● guardar").
+- **Idioma:** respuestas y mensajes de commit en español. La app es **bilingüe**: todo texto visible va con `tr("español", "english")` (`I18n.kt`), y la app usa español si el teléfono está en español e inglés en cualquier otro caso. La ayuda tiene una lista por idioma en `Help.kt`. Los textos van en minúscula con estilo de aparato ("01 color", "hold", "● guardar").
 - **Seguridad del teléfono (Samsung S26 Ultra, SM-S948B, Android 17).** Por ADB solo se permite:
   - `adb install -r`
   - `adb uninstall cl.lux0`

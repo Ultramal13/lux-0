@@ -1,5 +1,6 @@
 package cl.lux0.camera
 
+import cl.lux0.tr
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.ImageFormat
@@ -121,14 +122,14 @@ class MeterCamera(
         closeAll()
         if (gen != generation) return
         try {
-            val id = findCamera(front) ?: return fail(gen, "no se encontró la cámara")
+            val id = findCamera(front) ?: return fail(gen, tr("no se encontró la cámara", "camera not found"))
             val c = manager.getCameraCharacteristics(id)
             val caps = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES) ?: intArrayOf()
             if (CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_POST_PROCESSING !in caps) {
-                return fail(gen, "esta cámara no permite controlar el color")
+                return fail(gen, tr("esta cámara no permite controlar el color", "this camera does not allow color control"))
             }
             if (c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM1) == null) {
-                return fail(gen, "la cámara no entrega matrices de color")
+                return fail(gen, tr("la cámara no entrega matrices de color", "the camera does not provide color matrices"))
             }
             chars = c
             history.clear()
@@ -151,17 +152,17 @@ class MeterCamera(
                 override fun onDisconnected(d: CameraDevice) {
                     d.close()
                     if (device == d) device = null
-                    fail(gen, "la cámara se desconectó · toca para reintentar")
+                    fail(gen, tr("la cámara se desconectó · toca para reintentar", "camera disconnected · tap to retry"))
                 }
                 override fun onError(d: CameraDevice, error: Int) {
                     d.close()
                     if (device == d) device = null
-                    fail(gen, "error de cámara ($error) · toca para reintentar")
+                    fail(gen, tr("error de cámara", "camera error") + " ($error) · " + tr("toca para reintentar", "tap to retry"))
                 }
             })
         } catch (e: Exception) {
             Log.w("lux0", "start", e)
-            fail(gen, "no se pudo abrir la cámara · toca para reintentar")
+            fail(gen, tr("no se pudo abrir la cámara · toca para reintentar", "could not open the camera · tap to retry"))
         }
     }
 
@@ -179,15 +180,15 @@ class MeterCamera(
                             s.setRepeatingRequest(request(d, preview, yuv), null, handler)
                         } catch (e: Exception) {
                             Log.w("lux0", "repeating", e)
-                            fail(gen, "no se pudo iniciar la medición · toca para reintentar")
+                            fail(gen, tr("no se pudo iniciar la medición · toca para reintentar", "could not start measuring · tap to retry"))
                         }
                     }
                     override fun onConfigureFailed(s: CameraCaptureSession) =
-                        fail(gen, "no se pudo configurar la cámara · toca para reintentar")
+                        fail(gen, tr("no se pudo configurar la cámara · toca para reintentar", "could not configure the camera · tap to retry"))
                 }))
         } catch (e: Exception) {
             Log.w("lux0", "createSession", e)
-            fail(gen, "no se pudo configurar la cámara · toca para reintentar")
+            fail(gen, tr("no se pudo configurar la cámara · toca para reintentar", "could not configure the camera · tap to retry"))
         }
     }
 
@@ -259,7 +260,7 @@ class MeterCamera(
                 img.width, img.height, (minOf(img.width, img.height) * ROI_FRACTION).toInt().coerceAtLeast(8),
             )
             val warn = roi.warning()
-            if (warn != null || roi.g <= 0.001) { onSample(Sample(null, warn ?: "sin señal", roi)); return }
+            if (warn != null || roi.g <= 0.001) { onSample(Sample(null, warn ?: tr("sin señal", "no signal"), roi)); return }
             val cm1 = transform(c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM1))!!
             val cm2 = transform(c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM2)) ?: cm1
             val id = doubleArrayOf(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
@@ -269,19 +270,19 @@ class MeterCamera(
             val t2 = c.get(CameraCharacteristics.SENSOR_REFERENCE_ILLUMINANT2)?.toInt()?.let { illuminantK(it) } ?: t1
             val xy = ColorMath.cameraNeutralToXy(
                 doubleArrayOf(roi.r / roi.g, 1.0, roi.b / roi.g), cm1, cm2, cc1, cc2, t1, t2)
-            if (xy.first.isNaN() || xy.second.isNaN()) { onSample(Sample(null, "no se pudo calcular", roi)); return }
+            if (xy.first.isNaN() || xy.second.isNaN()) { onSample(Sample(null, tr("no se pudo calcular", "could not compute"), roi)); return }
             history.addLast(xy)
             while (history.size > 3) history.removeFirst()
             val r = ColorMath.xyToReading(history.sumOf { it.first } / history.size, history.sumOf { it.second } / history.size)
             val warning = when {
-                r.outOfRange -> "fuera de rango (1000–20000 k)"
-                abs(r.duv) > 0.02 -> "no parece neutro o luz muy teñida"
+                r.outOfRange -> tr("fuera de rango (1000–20000 k)", "out of range (1000–20000 k)")
+                abs(r.duv) > 0.02 -> tr("no parece neutro o luz muy teñida", "not neutral, or strongly tinted light")
                 else -> null
             }
             onSample(Sample(r.copy(cct = Calibration.apply(r.cct, calOffsetMired)), warning, roi))
         } catch (e: Exception) {
             Log.w("lux0", "cálculo de color", e)
-            onSample(Sample(null, "no se pudo calcular", null))
+            onSample(Sample(null, tr("no se pudo calcular", "could not compute"), null))
         }
     }
 

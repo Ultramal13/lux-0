@@ -13,7 +13,7 @@ It does not take pictures. It is a measuring instrument.
 > **Status: in development. Stage 1 works and is being tested.**
 > It measures and recommends values. Accuracy in real shoots, and battery use and temperature during long sessions, still need to be validated. There is no published release yet.
 >
-> The app interface is currently in Spanish.
+> The app is in **English and Spanish**: it follows the phone's language.
 
 ---
 

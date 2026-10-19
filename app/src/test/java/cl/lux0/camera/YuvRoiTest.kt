@@ -2,10 +2,13 @@ package cl.lux0.camera
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Before
 import org.junit.Test
 import java.nio.ByteBuffer
 
 class YuvRoiTest {
+    @Before fun spanish() { cl.lux0.I18n.force = "es" }
+
     private val w = 16; private val h = 16
 
     // Cuadro uniforme a partir de un RGB 0..255 (conversión JFIF directa).

@@ -1,5 +1,6 @@
 package cl.lux0.camera
 
+import cl.lux0.tr
 import java.nio.ByteBuffer
 
 /** Promedio dentro del círculo. Canales lineales normalizados 0..1. */
@@ -12,8 +13,8 @@ data class RoiResult(
 )
 
 fun RoiResult.warning(): String? = when {
-    clippedFraction >= 0.02 -> "zona quemada"
-    meanLevel < 0.02 -> "muy oscuro"
+    clippedFraction >= 0.02 -> tr("zona quemada", "clipped area")
+    meanLevel < 0.02 -> tr("muy oscuro", "too dark")
     else -> null
 }
 

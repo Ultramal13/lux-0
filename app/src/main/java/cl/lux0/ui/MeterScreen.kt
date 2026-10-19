@@ -1,5 +1,6 @@
 package cl.lux0.ui
 
+import cl.lux0.tr
 import android.graphics.ColorMatrix
 import android.graphics.ColorMatrixColorFilter
 import android.graphics.Matrix
@@ -53,7 +54,7 @@ import cl.lux0.color.Reading
 import java.util.Locale
 import kotlin.math.roundToInt
 
-val MODE_NAMES = mapOf(1 to "color", 7 to "sesiones", 8 to "ajustes", 9 to "calibrar", 10 to "ayuda")
+val MODE_NAMES: Map<Int, String> get() = mapOf(1 to "color", 7 to tr("sesiones", "sessions"), 8 to tr("ajustes", "settings"), 9 to tr("calibrar", "calibrate"), 10 to tr("ayuda", "help"))
 
 @Composable
 fun Header(mode: Int, theme: String, onTheme: () -> Unit, onHelp: () -> Unit = {}) {
@@ -66,7 +67,7 @@ fun Header(mode: Int, theme: String, onTheme: () -> Unit, onHelp: () -> Unit = {
         Spacer(Modifier.weight(1f))
         Text(String.format(Locale.US, "%02d %s", mode, MODE_NAMES[mode] ?: ""), style = mono(13, p.text))
         Text(
-            "◐ $theme", style = mono(12, p.keyText),
+            "◐ ${themeLabel(theme)}", style = mono(12, p.keyText),
             modifier = Modifier.padding(start = 10.dp).clip(RoundedCornerShape(7.dp)).background(p.key)
                 .clickable(onClick = onTheme).padding(horizontal = 8.dp, vertical = 5.dp),
         )
@@ -164,6 +165,12 @@ private fun viewfinderEffect(red: Boolean): RenderEffect =
         RenderEffect.createColorFilterEffect(ColorMatrixColorFilter(ColorMatrix(m)))
     }
 
+/** Nombre visible de un tema (la clave interna sigue en español). */
+fun themeLabel(key: String): String = when (key) {
+    "claro" -> tr("claro", "light"); "oscuro" -> tr("oscuro", "dark"); "rojo" -> tr("rojo", "red")
+    else -> "auto"
+}
+
 private fun kFraction(k: Double): Float =
     ((ColorMath.mired(2000.0) - ColorMath.mired(k)) / (ColorMath.mired(2000.0) - ColorMath.mired(10000.0)))
         .toFloat().coerceIn(0f, 1f)
@@ -199,8 +206,8 @@ private fun tintText(duv: Double): String {
     val s = String.format(Locale.US, "%.3f", kotlin.math.abs(duv))
     return when {
         duv < -0.0005 -> "−$s magenta"
-        duv > 0.0005 -> "+$s verde"
-        else -> "0.000 neutro"
+        duv > 0.0005 -> "+$s " + tr("verde", "green")
+        else -> "0.000 " + tr("neutro", "neutral")
     }
 }
 
@@ -214,11 +221,11 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
             Spacer(Modifier.weight(1f))
             val status = when {
                 st.demo -> "● demo"
-                st.hot -> "■ caliente"
-                st.idle -> "■ pausa"
-                st.error != null -> "● sin cámara"
+                st.hot -> tr("■ caliente", "■ hot")
+                st.idle -> tr("■ pausa", "■ paused")
+                st.error != null -> tr("● sin cámara", "● no camera")
                 st.hold -> "■ hold"
-                else -> "● en vivo"
+                else -> tr("● en vivo", "● live")
             }
             Text(status, style = mono(10, p.accent))
         }
@@ -228,16 +235,16 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
             Spacer(Modifier.width(12.dp))
             Column {
                 Text(r?.let { "${it.cct.roundToInt()}" } ?: "----", style = mono(44, p.screenText, true))
-                Text("k" + if (st.source == 2) "  ≈ estimado" else "", style = mono(13, p.screenDim))
+                Text("k" + if (st.source == 2) tr("  ≈ estimado", "  ≈ estimated") else "", style = mono(13, p.screenDim))
                 Spacer(Modifier.height(4.dp))
                 Text(r?.let { tintText(it.duv) } ?: "", style = mono(12, if (r != null && r.duv > 0) p.green else p.magenta))
-                Text(if (st.calOffset == 0.0) "sin calibrar" else "calibrado", style = mono(9, p.screenDim))
+                Text(if (st.calOffset == 0.0) tr("sin calibrar", "uncalibrated") else tr("calibrado", "calibrated"), style = mono(9, p.screenDim))
             }
         }
         val alert = when {
-            st.demo -> "modo demo · lecturas simuladas (emulador)"
-            st.hot -> "teléfono caliente: medición en pausa hasta que se enfríe"
-            st.idle -> "en pausa para ahorrar batería · toca la pantalla"
+            st.demo -> tr("modo demo · lecturas simuladas (emulador)", "demo mode · simulated readings (emulator)")
+            st.hot -> tr("teléfono caliente: medición en pausa hasta que se enfríe", "phone is hot: measuring paused until it cools down")
+            st.idle -> tr("en pausa para ahorrar batería · toca la pantalla", "paused to save battery · tap the screen")
             else -> st.error ?: st.warning
         }
         Text(alert ?: SOURCE_HINTS[st.source], style = mono(11, if (alert != null) p.accent else p.screenDim),
@@ -264,7 +271,7 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
 fun SourceRow(st: UiState, onSelect: (Int) -> Unit) {
     val p = LocalPalette.current
     Column(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 10.dp)) {
-        Text("fuente de medición", style = mono(11, p.text))
+        Text(tr("fuente de medición", "measuring source"), style = mono(11, p.text))
         Seg(SOURCES, st.source, onSelect, Modifier.padding(top = 5.dp))
     }
 }
@@ -275,16 +282,22 @@ fun CalibrationPanel(vm: MeterViewModel, st: UiState) {
     var ref by remember { mutableStateOf("") }
     var done by remember { mutableStateOf<String?>(null) }
     Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(vertical = 10.dp, horizontal = 4.dp)) {
-        Text("calibración de color", style = mono(14, p.text, true))
+        Text(tr("calibración de color", "color calibration"), style = mono(14, p.text, true))
         Text(
-            "1. pon una hoja blanca bajo la luz y fotografíala en raw con la r5.\n" +
-                "2. en dpp, lightroom o camera raw usa el cuentagotas de balance sobre la hoja y anota los k.\n" +
-                "3. mide la misma hoja aquí (fuente blanco/gris) e ingresa ese valor.\n" +
-                "ojo: papel muy brillante (blanqueadores ópticos) puede leer más frío con luz de día.",
+            tr(
+                "1. pon una hoja blanca bajo la luz y fotografíala en raw con la r5.\n" +
+                    "2. en dpp, lightroom o camera raw usa el cuentagotas de balance sobre la hoja y anota los k.\n" +
+                    "3. mide la misma hoja aquí (fuente blanco/gris) e ingresa ese valor.\n" +
+                    "ojo: papel muy brillante (blanqueadores ópticos) puede leer más frío con luz de día.",
+                "1. put a white sheet under the light and shoot it in raw with your camera.\n" +
+                    "2. in dpp, lightroom or camera raw use the white balance eyedropper on the sheet and note the k.\n" +
+                    "3. measure the same sheet here (white/gray source) and enter that value.\n" +
+                    "note: very bright paper (optical brighteners) may read cooler in daylight.",
+            ),
             style = mono(11, p.text), modifier = Modifier.padding(vertical = 8.dp),
         )
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("k referencia ", style = mono(12, p.text))
+            Text(tr("k referencia ", "reference k "), style = mono(12, p.text))
             BasicTextField(
                 ref, { ref = it.filter(Char::isDigit).take(5) },
                 textStyle = mono(16, p.keyText, true), cursorBrush = SolidColor(p.accent),
@@ -293,16 +306,16 @@ fun CalibrationPanel(vm: MeterViewModel, st: UiState) {
             )
         }
         Row(Modifier.padding(top = 10.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            WideKey("guardar", true, Modifier.weight(1f)) {
+            WideKey(tr("guardar", "save"), true, Modifier.weight(1f)) {
                 val k = ref.toDoubleOrNull()
                 done = when {
-                    k == null || k < 1500 || k > 15000 -> "ingresa un valor entre 1500 y 15000"
-                    st.reading == null -> "aún no hay lectura"
-                    vm.calibrate(k) -> "calibrado a ${k.roundToInt()} k"
-                    else -> "no se pudo calibrar"
+                    k == null || k < 1500 || k > 15000 -> tr("ingresa un valor entre 1500 y 15000", "enter a value between 1500 and 15000")
+                    st.reading == null -> tr("aún no hay lectura", "no reading yet")
+                    vm.calibrate(k) -> tr("calibrado a ", "calibrated to ") + "${k.roundToInt()} k"
+                    else -> tr("no se pudo calibrar", "could not calibrate")
                 }
             }
-            WideKey("reiniciar", false, Modifier.weight(1f)) { vm.resetCalibration(); done = "calibración borrada" }
+            WideKey(tr("reiniciar", "reset"), false, Modifier.weight(1f)) { vm.resetCalibration(); done = tr("calibración borrada", "calibration cleared") }
         }
         done?.let { Text(it, style = mono(12, p.accent), modifier = Modifier.padding(top = 8.dp)) }
     }

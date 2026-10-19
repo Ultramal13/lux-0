@@ -6,13 +6,15 @@ import java.util.Locale
 
 const val CSV_HEADER =
     "fecha;sesion;fuente;kelvin;duv;cam1;rec1;cam2;rec2;iso1;fps1;obt1;f1;nd1;ev1;iso2;fps2;obt2;f2;nd2;ev2;comentario"
+const val CSV_HEADER_EN =
+    "date;session;source;kelvin;duv;cam1;rec1;cam2;rec2;iso1;fps1;shutter1;f1;nd1;ev1;iso2;fps2;shutter2;f2;nd2;ev2;comment"
 
 private fun esc(s: String): String =
     if (s.any { it == ';' || it == '"' || it == '\n' || it == '\r' }) "\"" + s.replace("\"", "\"\"") + "\"" else s
 
 fun toCsv(list: List<Measurement>, sessions: Map<Long, String>): String {
     val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)
-    val sb = StringBuilder(CSV_HEADER).append('\n')
+    val sb = StringBuilder(if (cl.lux0.I18n.en) CSV_HEADER_EN else CSV_HEADER).append('\n')
     for (m in list) {
         val cols = listOf(
             fmt.format(Date(m.time)), sessions[m.sessionId] ?: "", m.source,

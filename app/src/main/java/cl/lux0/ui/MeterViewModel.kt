@@ -1,5 +1,6 @@
 package cl.lux0.ui
 
+import cl.lux0.tr
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
@@ -30,11 +31,11 @@ import java.io.FileOutputStream
 import java.util.Locale
 import kotlin.math.abs
 
-val SOURCES = listOf("blanco/gris", "difusor→luz", "escena ≈")
-val SOURCE_HINTS = listOf(
-    "apunta a blanco o gris en el círculo",
-    "difusor blanco sobre el lente, apunta a la luz",
-    "escena sin referencia: valor estimado",
+val SOURCES: List<String> get() = listOf(tr("blanco/gris", "white/gray"), tr("difusor→luz", "diffuser→light"), tr("escena ≈", "scene ≈"))
+val SOURCE_HINTS: List<String> get() = listOf(
+    tr("apunta a blanco o gris en el círculo", "aim at white or gray inside the circle"),
+    tr("difusor blanco sobre el lente, apunta a la luz", "white diffuser over the lens, aim at the light"),
+    tr("escena sin referencia: valor estimado", "scene without reference: estimated value"),
 )
 
 data class UiState(
@@ -228,7 +229,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
         }
         val c1 = cam(1); val c2 = cam(2)
         store.save(Measurement(
-            id, store.activeSession().id, id, if (_state.value.demo) "demo (simulado)" else SOURCES[_state.value.source], r.cct, r.duv,
+            id, store.activeSession().id, id, if (_state.value.demo) tr("demo (simulado)", "demo (simulated)") else SOURCES[_state.value.source], r.cct, r.duv,
             c1.label, recText(c1, r), c2.label, recText(c2, r), prefs.cap1, prefs.cap2, path, "",
         ))
         bump()

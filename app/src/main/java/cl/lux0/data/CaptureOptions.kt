@@ -1,5 +1,6 @@
 package cl.lux0.data
 
+import cl.lux0.tr
 /** Valores fijos para elegir en la ventana de captura (sin escribir a mano). */
 object CaptureOptions {
     /** ISO en tercios de paso, de 100 a 51200. Se corta según el máximo de cada cámara. */
@@ -51,7 +52,7 @@ object CaptureOptions {
     fun fLabel(f: Double?): String = if (f == null) "–" else "f/" + (if (f == Math.floor(f)) f.toInt().toString() else f.toString())
 
     fun ndLabel(nd: String): String {
-        val stops = ND.firstOrNull { it.first == nd }?.second ?: return nd.ifBlank { "sin nd" }
-        return if (nd.isBlank()) "sin nd" else "$nd · $stops pasos"
+        val stops = ND.firstOrNull { it.first == nd }?.second ?: return nd.ifBlank { tr("sin nd", "no nd") }
+        return if (nd.isBlank()) tr("sin nd", "no nd") else "$nd · $stops " + tr("pasos", "stops")
     }
 }

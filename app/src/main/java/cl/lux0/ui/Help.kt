@@ -15,7 +15,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 
 /** Ayuda: qué significa cada parámetro y en qué influye. */
-private val HELP = listOf(
+private val HELP_ES = listOf(
     "kelvin (k)" to
         "temperatura de color de la luz. número bajo = luz cálida/naranja (vela ~1900 k, ampolleta ~2700–3200 k). " +
         "número alto = luz fría/azul (sol ~5600 k, nublado ~6500 k, sombra 7500 k o más). " +
@@ -72,11 +72,68 @@ private val HELP = listOf(
         "solo en el emulador del computador: lecturas simuladas para revisar la interfaz. en el teléfono nunca se activa.",
 )
 
+private val HELP_EN = listOf(
+    "kelvin (k)" to
+        "the color temperature of the light. low number = warm/orange light (candle ~1900 k, bulb ~2700–3200 k). " +
+        "high number = cool/blue light (sun ~5600 k, overcast ~6500 k, shade 7500 k or more). " +
+        "it is the value you set in your camera's manual white balance.",
+    "tint (duv)" to
+        "how far the light drifts from 'natural' white toward green (+) or magenta (−). " +
+        "fluorescent tubes and cheap leds often have tint. between −0.003 and +0.003 it is barely visible. " +
+        "above 0.02 the app warns \"strongly tinted light\".",
+    "reading the recommendation" to
+        "example: \"4400–5000 · 4700 · ≈g2\". 4400–5000 = reasonable range given the measurement accuracy. " +
+        "4700 = suggested value, already rounded to that camera's steps. " +
+        "≈g2 = on canon, wb shift 2 steps toward green to compensate magenta light (≈ because the equivalence is approximate). " +
+        "⚠ = the light has a tint this camera cannot correct.",
+    "measuring source" to
+        "white/gray: aim the circle at a white sheet or gray card under the light (most accurate). " +
+        "diffuser→light: put white paper or a diffuser over the lens and point it at the light from the subject's position. " +
+        "scene ≈: no reference; only an estimate (±500 k or more) because it depends on the color of what you aim at.",
+    "warnings" to
+        "clipped area: the circle is too bright, step back or change the angle. too dark: not enough light in the circle. " +
+        "not neutral: what you aim at has its own color, or the light is strongly tinted.",
+    "reflectance (%)" to
+        "how much light the measured surface returns: gray card 18 %, white paper ~90 %. " +
+        "it does not change kelvin; it will be used for exposure (stage 2).",
+    "interval" to
+        "how often a reading is computed (0.5 / 1 / 2 s). longer = less work and less heat. " +
+        "if the phone warms up, the app switches to 3 s by itself.",
+    "camera 1 and camera 2" to
+        "the two cameras you want recommendations for. pick them in each card's ▾ menu. " +
+        "* = that camera's data is not verified with the manufacturer (check its menu).",
+    "camera data" to
+        "min k / max k: the temperature range it accepts. step: how much it changes per click (canon r5: 100 k); " +
+        "the recommendation is rounded to that step. tint: whether it has green/magenta correction. " +
+        "max iso: limits that camera's iso list.",
+    "capture (iso, fps, shutter, f/, nd, ev)" to
+        "how your camera is set while measuring. it is saved with each reading and goes into the csv for the colorist. " +
+        "ev comp. = exposure compensation: it does not change kelvin, but on fixed-aperture cameras with auto exposure " +
+        "(like the luna ultra) it is the setting you control to brighten or darken. " +
+        "in stage 2 it will be used for exposure (which aperture or nd to use) and for flicker warnings based on fps and shutter.",
+    "calibration" to
+        "corrects the phone sensor's own bias. shoot a white sheet in raw with your camera, read the k with the white balance " +
+        "eyedropper in dpp or lightroom, measure the same sheet here and enter that value. uncalibrated, the margin is wider (±300 k).",
+    "hold and save" to
+        "hold freezes the number (and turns the camera off) so you can copy it calmly. save adds it to the active session with " +
+        "time, thumbnail, recommendation and capture settings; tap it in sessions to write a comment.",
+    "sessions" to
+        "group readings by shoot or location (+ new). export csv sends the session spreadsheet. " +
+        "long-press a reading to delete it.",
+    "pause and heat" to
+        "after 90 s without touching the screen the camera turns off to save battery; tap to continue. " +
+        "if the phone gets warm, the app measures more slowly or stops until it cools down.",
+    "themes" to
+        "◐ switches between auto, light, dark and red night. red night is for dark sets: it does not dazzle or spill light on the scene.",
+    "demo mode" to
+        "only on the computer's emulator: simulated readings to review the interface. it never turns on on a phone.",
+)
+
 @Composable
 fun HelpPanel(modifier: Modifier) {
     val p = LocalPalette.current
     LazyColumn(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(HELP) { (title, body) ->
+        items(if (cl.lux0.I18n.en) HELP_EN else HELP_ES) { (title, body) ->
             Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(p.key).padding(12.dp)) {
                 Text(title, style = mono(13, p.keyText, true))
                 Text(body, style = mono(11, p.keyText), modifier = Modifier.padding(top = 4.dp))

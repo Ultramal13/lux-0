@@ -1,5 +1,6 @@
 package cl.lux0.ui
 
+import cl.lux0.tr
 import android.content.Intent
 import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
@@ -76,7 +77,7 @@ private fun Dialog(title: String, onDismiss: () -> Unit, confirm: String, onConf
         title = { Text(title, style = mono(14, p.text, true)) },
         text = content,
         confirmButton = { Text(confirm, style = mono(13, p.accent, true), modifier = Modifier.clickable(onClick = onConfirm).padding(8.dp)) },
-        dismissButton = if (!showCancel) null else { { Text("cancelar", style = mono(13, p.text), modifier = Modifier.clickable(onClick = onDismiss).padding(8.dp)) } },
+        dismissButton = if (!showCancel) null else { { Text(tr("cancelar", "cancel"), style = mono(13, p.text), modifier = Modifier.clickable(onClick = onDismiss).padding(8.dp)) } },
     )
 }
 
@@ -95,23 +96,23 @@ fun HistoryPanel(vm: MeterViewModel, version: Int, modifier: Modifier) {
     Column(modifier.fillMaxWidth()) {
         Row(Modifier.horizontalScroll(rememberScrollState()).padding(vertical = 6.dp), horizontalArrangement = Arrangement.spacedBy(5.dp)) {
             Seg(sessions.map { it.name }, sessions.indexOfFirst { it.id == active.id }, { vm.store.setActive(sessions[it].id); vm.bump() })
-            Text("+ nueva", style = mono(12, p.accent, true),
+            Text(tr("+ nueva", "+ new"), style = mono(12, p.accent, true),
                 modifier = Modifier.clip(RoundedCornerShape(7.dp)).background(p.key).clickable { newSession = true }.padding(horizontal = 10.dp, vertical = 7.dp))
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("${list.size} mediciones", style = mono(11, p.text))
+            Text("${list.size} " + tr("mediciones", "readings"), style = mono(11, p.text))
             Spacer(Modifier.weight(1f))
-            Text("exportar csv ↗", style = mono(12, p.accent, true), modifier = Modifier.clickable {
+            Text(tr("exportar csv ↗", "export csv ↗"), style = mono(12, p.accent, true), modifier = Modifier.clickable {
                 val dir = File(ctx.cacheDir, "export").apply { mkdirs() }
                 val f = File(dir, "lux0-${active.name.replace(Regex("[^a-zA-Z0-9-]"), "_")}.csv")
                 f.writeText(toCsv(vm.store.measurements(active.id), sessions.associate { it.id to it.name }))
                 val uri = FileProvider.getUriForFile(ctx, "cl.lux0.files", f)
                 ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
                     type = "text/csv"; putExtra(Intent.EXTRA_STREAM, uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }, "exportar csv"))
+                }, tr("exportar csv", "export csv")))
             }.padding(6.dp))
         }
-        if (list.isEmpty()) Text("sin mediciones en esta sesión. mide y toca ● guardar.", style = mono(11, p.text), modifier = Modifier.padding(top = 12.dp))
+        if (list.isEmpty()) Text(tr("sin mediciones en esta sesión. mide y toca ● guardar.", "no readings in this session. measure and tap ● save."), style = mono(11, p.text), modifier = Modifier.padding(top = 12.dp))
         LazyColumn(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             items(list, key = { it.id }) { m ->
                 Row(
@@ -127,7 +128,7 @@ fun HistoryPanel(vm: MeterViewModel, version: Int, modifier: Modifier) {
                         Text("① ${m.cam1}: ${m.rec1}", style = mono(10, p.screenText))
                         Text("② ${m.cam2}: ${m.rec2}", style = mono(10, p.screenText))
                         Text("${m.source} · ${m.cap1.label}", style = mono(9, p.screenDim))
-                        Text(m.comment.ifBlank { "toca para comentar" }, style = mono(11, if (m.comment.isBlank()) p.screenDim else p.accent))
+                        Text(m.comment.ifBlank { tr("toca para comentar", "tap to add a comment") }, style = mono(11, if (m.comment.isBlank()) p.screenDim else p.accent))
                     }
                 }
             }
@@ -136,18 +137,18 @@ fun HistoryPanel(vm: MeterViewModel, version: Int, modifier: Modifier) {
 
     if (newSession) {
         var name by remember { mutableStateOf("") }
-        Dialog("nueva sesión", { newSession = false }, "crear", { vm.store.newSession(name); newSession = false; vm.bump() }) {
-            Field(name, { name = it }, 240, hint = "videoclip · día 1 · interior")
+        Dialog(tr("nueva sesión", "new session"), { newSession = false }, tr("crear", "create"), { vm.store.newSession(name); newSession = false; vm.bump() }) {
+            Field(name, { name = it }, 240, hint = tr("videoclip · día 1 · interior", "music video · day 1 · interior"))
         }
     }
     editing?.let { m ->
         var text by remember(m.id) { mutableStateOf(m.comment) }
-        Dialog("comentario", { editing = null }, "guardar", { vm.store.updateComment(m.id, text); editing = null; vm.bump() }) {
+        Dialog(tr("comentario", "comment"), { editing = null }, tr("guardar", "save"), { vm.store.updateComment(m.id, text); editing = null; vm.bump() }) {
             Field(text, { text = it }, 260)
         }
     }
     deleting?.let { m ->
-        Dialog("¿borrar medición de ${m.cct.roundToInt()} k?", { deleting = null }, "borrar", { vm.store.delete(m.id); deleting = null; vm.bump() }) {}
+        Dialog(tr("¿borrar medición de ", "delete reading of ") + "${m.cct.roundToInt()} k?", { deleting = null }, tr("borrar", "delete"), { vm.store.delete(m.id); deleting = null; vm.bump() }) {}
     }
 }
 
@@ -192,12 +193,12 @@ private fun CaptureEditor(vm: MeterViewModel, slot: Int) {
     Column {
         Picker("iso", c.iso, isoList, { it.toString() }) { set(c.copy(iso = it)) }
         Picker("fps", c.fps, CaptureOptions.FPS, CaptureOptions::fpsLabel) { set(c.copy(fps = it)) }
-        Picker("obturación", c.shutter, CaptureOptions.SHUTTER, { it }) { set(c.copy(shutter = it)) }
-        Picker("diafragma", c.fStop, CaptureOptions.F_STOP, CaptureOptions::fLabel) { set(c.copy(fStop = it)) }
-        Picker("filtro nd", c.nd, CaptureOptions.ND.map { it.first }, CaptureOptions::ndLabel) { set(c.copy(nd = it)) }
-        Picker("comp. ev", c.ev, CaptureOptions.EV, CaptureOptions::evLabel) { set(c.copy(ev = it)) }
+        Picker(tr("obturación", "shutter"), c.shutter, CaptureOptions.SHUTTER, { it }) { set(c.copy(shutter = it)) }
+        Picker(tr("diafragma", "aperture"), c.fStop, CaptureOptions.F_STOP, CaptureOptions::fLabel) { set(c.copy(fStop = it)) }
+        Picker(tr("filtro nd", "nd filter"), c.nd, CaptureOptions.ND.map { it.first }, CaptureOptions::ndLabel) { set(c.copy(nd = it)) }
+        Picker(tr("comp. ev", "ev comp."), c.ev, CaptureOptions.EV, CaptureOptions::evLabel) { set(c.copy(ev = it)) }
         if (vm.cam(slot).isoMax == null) {
-            Text("iso máximo de esta cámara sin verificar", style = mono(9, LocalPalette.current.text.copy(alpha = 0.6f)),
+            Text(tr("iso máximo de esta cámara sin verificar", "max iso of this camera not verified"), style = mono(9, LocalPalette.current.text.copy(alpha = 0.6f)),
                 modifier = Modifier.padding(top = 4.dp))
         }
     }
@@ -208,35 +209,35 @@ fun SettingsPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
     val p = LocalPalette.current
     var custom by remember { mutableStateOf(false) }
     Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-        Text("* datos sin verificar con el fabricante", style = mono(9, p.text.copy(alpha = 0.6f)))
-        Text("+ nueva cámara personalizada", style = mono(12, p.accent, true),
+        Text(tr("* datos sin verificar con el fabricante", "* data not verified with the manufacturer"), style = mono(9, p.text.copy(alpha = 0.6f)))
+        Text(tr("+ nueva cámara personalizada", "+ new custom camera"), style = mono(12, p.accent, true),
             modifier = Modifier.clickable { custom = true }.padding(vertical = 8.dp))
-        SettingRow("formato del tinte") {
-            Seg(listOf("unidades cámara", "duv"), if (vm.prefs.tintFormat == "duv") 1 else 0,
+        SettingRow(tr("formato del tinte", "tint format")) {
+            Seg(listOf(tr("unidades cámara", "camera units"), "duv"), if (vm.prefs.tintFormat == "duv") 1 else 0,
                 { vm.prefs.tintFormat = if (it == 1) "duv" else "camara"; vm.bump() })
         }
-        SettingRow("reflectancia de la superficie (%)") {
+        SettingRow(tr("reflectancia de la superficie (%)", "surface reflectance (%)")) {
             var r by remember { mutableStateOf(vm.prefs.reflectance.toString()) }
             Field(r, { r = it.filter(Char::isDigit).take(2); r.toIntOrNull()?.let { v -> vm.prefs.reflectance = v; vm.bump() } }, 70, true)
         }
-        SettingRow("intervalo entre mediciones") {
-            Seg(listOf("0,5 s", "1 s", "2 s"), INTERVALS.indexOf(vm.prefs.intervalMs), { vm.setInterval(INTERVALS[it]) })
+        SettingRow(tr("intervalo entre mediciones", "measuring interval")) {
+            Seg(listOf(tr("0,5 s", "0.5 s"), "1 s", "2 s"), INTERVALS.indexOf(vm.prefs.intervalMs), { vm.setInterval(INTERVALS[it]) })
         }
-        SettingRow("cámara del celular") {
-            Seg(listOf("trasera", "frontal"), if (vm.prefs.frontCamera) 1 else 0, { vm.prefs.frontCamera = it == 1; vm.bump() })
+        SettingRow(tr("cámara del celular", "phone camera")) {
+            Seg(listOf(tr("trasera", "back"), tr("frontal", "front")), if (vm.prefs.frontCamera) 1 else 0, { vm.prefs.frontCamera = it == 1; vm.bump() })
         }
-        SettingRow("red eléctrica") {
+        SettingRow(tr("red eléctrica", "mains frequency")) {
             Seg(listOf("50 hz", "60 hz"), if (vm.prefs.mainsHz == 60) 1 else 0, { vm.prefs.mainsHz = if (it == 1) 60 else 50; vm.bump() })
         }
-        SettingRow("tema") {
+        SettingRow(tr("tema", "theme")) {
             val t = listOf("auto", "claro", "oscuro", "rojo")
-            Seg(t, t.indexOf(st.theme), { vm.setTheme(t[it]) })
+            Seg(t.map(::themeLabel), t.indexOf(st.theme), { vm.setTheme(t[it]) })
         }
-        SettingRow("calibración (${if (st.calOffset == 0.0) "sin calibrar" else "calibrado"})") {
-            Seg(listOf("calibrar →"), -1, { vm.setMode(9) })
+        SettingRow(tr("calibración", "calibration") + " (${if (st.calOffset == 0.0) tr("sin calibrar", "uncalibrated") else tr("calibrado", "calibrated")})") {
+            Seg(listOf(tr("calibrar →", "calibrate →")), -1, { vm.setMode(9) })
         }
-        SettingRow("ayuda") {
-            Seg(listOf("qué significa cada cosa →"), -1, { vm.setMode(10) })
+        SettingRow(tr("ayuda", "help")) {
+            Seg(listOf(tr("qué significa cada cosa →", "what each setting means →")), -1, { vm.setMode(10) })
         }
         Spacer(Modifier.height(12.dp))
     }
@@ -259,10 +260,10 @@ fun CustomCameraDialog(vm: MeterViewModel, onDone: () -> Unit) {
     var tint by remember { mutableStateOf(false) }
     var isoMax by remember { mutableStateOf<Int?>(null) }
     var err by remember { mutableStateOf<String?>(null) }
-    Dialog("cámara personalizada", onDone, "guardar", {
+    Dialog(tr("cámara personalizada", "custom camera"), onDone, tr("guardar", "save"), {
         err = when {
-            name.isBlank() -> "escribe marca y modelo"
-            kMin >= kMax -> "el k mínimo debe ser menor que el máximo"
+            name.isBlank() -> tr("escribe marca y modelo", "type brand and model")
+            kMin >= kMax -> tr("el k mínimo debe ser menor que el máximo", "min k must be lower than max k")
             else -> null
         }
         if (err == null) {
@@ -275,18 +276,18 @@ fun CustomCameraDialog(vm: MeterViewModel, onDone: () -> Unit) {
         }
     }) {
         Column(Modifier.verticalScroll(rememberScrollState())) {
-            Field(name, { name = it }, 240, hint = "marca modelo (ej. sony fx3)")
-            Hint("el nombre que verás en el menú de cámaras")
-            Picker("k mínimo", kMin, listOf(2000, 2300, 2500, 2800, 3000, 3200), { "$it k" }) { kMin = it }
-            Hint("la temperatura más cálida que acepta la cámara")
-            Picker("k máximo", kMax, listOf(7500, 8000, 9000, 9900, 10000, 12000, 15000), { "$it k" }) { kMax = it }
-            Hint("la temperatura más fría que acepta la cámara")
-            Picker("paso", step, listOf(10, 50, 100, 200), { "$it k" }) { step = it }
-            Hint("de cuánto en cuánto cambia el kelvin en la cámara; la recomendación se redondea a este paso")
-            Picker("tinte", tint, listOf(false, true), { if (it) "g/m ±9" else "no tiene" }) { tint = it }
-            Hint("si la cámara permite corregir verde/magenta (como el wb shift de canon); si no, solo se muestra ⚠")
-            Picker("iso máximo", isoMax, listOf<Int?>(null) + CaptureOptions.ISO.filter { it >= 3200 }, { it?.toString() ?: "no sé" }) { isoMax = it }
-            Hint("limita la lista de iso de esta cámara")
+            Field(name, { name = it }, 240, hint = tr("marca modelo (ej. sony fx3)", "brand model (e.g. sony fx3)"))
+            Hint(tr("el nombre que verás en el menú de cámaras", "the name shown in the camera menu"))
+            Picker(tr("k mínimo", "min k"), kMin, listOf(2000, 2300, 2500, 2800, 3000, 3200), { "$it k" }) { kMin = it }
+            Hint(tr("la temperatura más cálida que acepta la cámara", "the warmest temperature the camera accepts"))
+            Picker(tr("k máximo", "max k"), kMax, listOf(7500, 8000, 9000, 9900, 10000, 12000, 15000), { "$it k" }) { kMax = it }
+            Hint(tr("la temperatura más fría que acepta la cámara", "the coolest temperature the camera accepts"))
+            Picker(tr("paso", "step"), step, listOf(10, 50, 100, 200), { "$it k" }) { step = it }
+            Hint(tr("de cuánto en cuánto cambia el kelvin en la cámara; la recomendación se redondea a este paso", "how much the kelvin changes per click on the camera; the recommendation is rounded to this step"))
+            Picker(tr("tinte", "tint"), tint, listOf(false, true), { if (it) "g/m ±9" else tr("no tiene", "none") }) { tint = it }
+            Hint(tr("si la cámara permite corregir verde/magenta (como el wb shift de canon); si no, solo se muestra ⚠", "whether the camera can correct green/magenta (like canon's wb shift); if not, only ⚠ is shown"))
+            Picker(tr("iso máximo", "max iso"), isoMax, listOf<Int?>(null) + CaptureOptions.ISO.filter { it >= 3200 }, { it?.toString() ?: tr("no sé", "don't know") }) { isoMax = it }
+            Hint(tr("limita la lista de iso de esta cámara", "limits this camera's iso list"))
             err?.let { Text(it, style = mono(11, LocalPalette.current.accent)) }
         }
     }
@@ -309,7 +310,7 @@ fun CameraCards(vm: MeterViewModel, version: Int) {
                         Text("$slot", style = mono(10, if (p.red) p.screenText else androidx.compose.ui.graphics.Color.Black, true))
                     }
                     Box {
-                        Text("  cámara $slot: ${cam.label}${if (!cam.verified) " *" else ""}  ▾", style = mono(13, p.keyText, true),
+                        Text("  " + tr("cámara", "camera") + " $slot: ${cam.label}${if (!cam.verified) " *" else ""}  ▾", style = mono(13, p.keyText, true),
                             modifier = Modifier.clickable { open = true }.padding(vertical = 4.dp))
                         DropdownMenu(open, { open = false }, containerColor = p.body) {
                             vm.cameras.forEach { c ->
@@ -319,7 +320,7 @@ fun CameraCards(vm: MeterViewModel, version: Int) {
                                 )
                             }
                             DropdownMenuItem(
-                                text = { Text("+ cámara personalizada…", style = mono(13, p.accent, true)) },
+                                text = { Text(tr("+ cámara personalizada…", "+ custom camera…"), style = mono(13, p.accent, true)) },
                                 onClick = { open = false; custom = true },
                             )
                         }
@@ -328,18 +329,20 @@ fun CameraCards(vm: MeterViewModel, version: Int) {
                 // Resumen de captura; al tocarlo se edita en una ventana con espacio para el teclado.
                 val cap = if (slot == 1) vm.prefs.cap1 else vm.prefs.cap2
                 Text(
-                    "${cap.iso} iso · ${CaptureOptions.fpsLabel(cap.fps)}p · ${cap.shutter} · ${CaptureOptions.fLabel(cap.fStop)} · ${cap.nd.ifBlank { "sin nd" }}${if (cap.ev != 0.0) " · ev " + CaptureOptions.evLabel(cap.ev) else ""}  ✎",
+                    "${cap.iso} iso · ${CaptureOptions.fpsLabel(cap.fps)}p · ${cap.shutter} · ${CaptureOptions.fLabel(cap.fStop)} · ${cap.nd.ifBlank { tr("sin nd", "no nd") }}${if (cap.ev != 0.0) " · ev " + CaptureOptions.evLabel(cap.ev) else ""}  ✎",
                     style = mono(12, p.keyText),
                     modifier = Modifier.fillMaxWidth().padding(top = 6.dp).clickable { editing = slot }.padding(vertical = 4.dp),
                 )
             }
         }
-        Text("* datos sin verificar con el fabricante", style = mono(9, p.text.copy(alpha = 0.6f)))
+        if (!vm.cam(1).verified || !vm.cam(2).verified) {
+            Text(tr("* datos sin verificar con el fabricante", "* data not verified with the manufacturer"), style = mono(9, p.text.copy(alpha = 0.6f)))
+        }
     }
     if (custom) CustomCameraDialog(vm) { custom = false }
     if (editing != 0) {
         val slot = editing
-        Dialog("captura cámara $slot · ${vm.cam(slot).label}", { editing = 0; vm.bump() }, "listo", { editing = 0; vm.bump() }, showCancel = false) {
+        Dialog(tr("captura cámara", "capture camera") + " $slot · ${vm.cam(slot).label}", { editing = 0; vm.bump() }, tr("listo", "done"), { editing = 0; vm.bump() }, showCancel = false) {
             CaptureEditor(vm, slot)
         }
     }

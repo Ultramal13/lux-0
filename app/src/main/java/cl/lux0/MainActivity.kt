@@ -101,7 +101,7 @@ fun App(vm: MeterViewModel = viewModel()) {
             if (meter) {
                 if (granted) BlackScreen(vm, st) { textureView = it }
                 else Box(Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(14.dp)).background(palette.screen).padding(16.dp)) {
-                    Text("lux-0 necesita la cámara para medir.\nvuelve a abrir la app para dar el permiso.", style = mono(13, palette.screenText))
+                    Text(tr("lux-0 necesita la cámara para medir.\nvuelve a abrir la app para dar el permiso.", "lux-0 needs the camera to measure.\nreopen the app to grant permission."), style = mono(13, palette.screenText))
                 }
                 if (st.mode == 1) Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
                     SourceRow(st, vm::setSource)
@@ -121,7 +121,7 @@ fun App(vm: MeterViewModel = viewModel()) {
             KeyGrid(st.mode) { vm.setMode(it) }
             Row(Modifier.padding(top = 7.dp), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 WideKey(if (st.hold) "■ hold" else "hold", false, Modifier.weight(1f)) { vm.toggleHold() }
-                WideKey("● guardar", true, Modifier.weight(1f)) {
+                WideKey(tr("● guardar", "● save"), true, Modifier.weight(1f)) {
                     vm.save(textureView?.takeIf { it.isAvailable }?.getBitmap(256, 256))
                 }
             }

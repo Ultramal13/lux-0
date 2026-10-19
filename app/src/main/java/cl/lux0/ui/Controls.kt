@@ -1,5 +1,6 @@
 package cl.lux0.ui
 
+import cl.lux0.tr
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
@@ -70,11 +71,11 @@ fun Knob(index: Int, label: String, enabled: Boolean, onStep: (Int) -> Unit) {
 
 data class KeyDef(val n: Int, val glyph: String, val label: String, val enabled: Boolean)
 
-val KEYS = listOf(
-    KeyDef(1, "K", "color", true), KeyDef(2, "EV", "expo", false),
-    KeyDef(3, "lx", "lux", false), KeyDef(4, "Hz", "parpadeo", false),
-    KeyDef(5, "A|B", "comparar", false), KeyDef(6, "▦", "mapa", false),
-    KeyDef(7, "≡", "sesiones", true), KeyDef(8, "⚙", "ajustes", true),
+val KEYS: List<KeyDef> get() = listOf(
+    KeyDef(1, "K", tr("color", "color"), true), KeyDef(2, "EV", tr("expo", "expo"), false),
+    KeyDef(3, "lx", "lux", false), KeyDef(4, "Hz", tr("parpadeo", "flicker"), false),
+    KeyDef(5, "A|B", tr("comparar", "compare"), false), KeyDef(6, "▦", tr("mapa", "map"), false),
+    KeyDef(7, "≡", tr("sesiones", "sessions"), true), KeyDef(8, "⚙", tr("ajustes", "settings"), true),
 )
 
 @Composable

@@ -1,5 +1,6 @@
 package cl.lux0.data
 
+import cl.lux0.tr
 import android.content.Context
 import cl.lux0.color.CameraProfile
 import cl.lux0.color.cameraProfileFromJson
@@ -62,8 +63,9 @@ class Store(private val context: Context) {
     fun activeSession(): Session {
         sessions.firstOrNull { it.id == activeId }?.let { return it }
         val day = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
-        val existing = sessions.firstOrNull { it.name == "sesión $day" }
-        val s = existing ?: newSessionInternal("sesión $day")
+        val auto = tr("sesión", "session") + " $day"
+        val existing = sessions.firstOrNull { it.name == auto }
+        val s = existing ?: newSessionInternal(auto)
         activeId = s.id
         persist()
         return s
@@ -76,7 +78,7 @@ class Store(private val context: Context) {
     }
 
     fun newSession(name: String): Session {
-        val s = newSessionInternal(name.ifBlank { "sesión" })
+        val s = newSessionInternal(name.ifBlank { tr("sesión", "session") })
         activeId = s.id
         persist()
         return s

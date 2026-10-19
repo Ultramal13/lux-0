@@ -1,9 +1,12 @@
 package cl.lux0.data
 
 import org.junit.Assert.assertEquals
+import org.junit.Before
 import org.junit.Test
 
 class CaptureOptionsTest {
+    @Before fun spanish() { cl.lux0.I18n.force = "es" }
+
     @Test fun isoCutAtCameraMax() {
         assertEquals(51200, CaptureOptions.isoFor(51200).last())
         assertEquals(6400, CaptureOptions.isoFor(6400).last())
@@ -22,5 +25,12 @@ class CaptureOptionsTest {
         assertEquals("−⅔", CaptureOptions.evLabel(-2 / 3.0))
         assertEquals("0", CaptureOptions.evLabel(0.0))
         assertEquals(25, CaptureOptions.EV.size)
+    }
+
+    @Test fun englishLabels() {
+        cl.lux0.I18n.force = "en"
+        assertEquals("nd8 · 3 stops", CaptureOptions.ndLabel("nd8"))
+        assertEquals("no nd", CaptureOptions.ndLabel(""))
+        cl.lux0.I18n.force = "es"
     }
 }

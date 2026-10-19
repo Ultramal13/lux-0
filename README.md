@@ -12,6 +12,8 @@ No toma fotos. Es un instrumento de medición.
 
 > **Estado: en desarrollo — etapa 1 funcionando, en pruebas.**
 > Mide y recomienda valores, pero falta validar la precisión en terreno y el consumo de batería y temperatura en uso prolongado. Todavía no hay versión publicada.
+>
+> La app está en **español e inglés**: usa el idioma del teléfono.
 
 ---
 
