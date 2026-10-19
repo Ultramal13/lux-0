@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import cl.lux0.color.CameraProfile
 import cl.lux0.color.TintSystem
+import cl.lux0.data.CaptureOptions
 import cl.lux0.data.CaptureSettings
 import cl.lux0.data.Measurement
 import cl.lux0.data.toCsv
@@ -158,33 +160,45 @@ private fun SettingRow(label: String, content: @Composable () -> Unit) {
     }
 }
 
+/** Una fila "etiqueta  valor ▾" que abre una lista para elegir; no se escribe nada. */
+@Composable
+private fun <T> Picker(label: String, value: T, options: List<T>, show: (T) -> String, onPick: (T) -> Unit) {
+    val p = LocalPalette.current
+    var open by remember { mutableStateOf(false) }
+    Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(label, style = mono(12, p.text), modifier = Modifier.width(96.dp))
+        Box {
+            Text("${show(value)}  ▾", style = mono(14, p.keyText, true),
+                modifier = Modifier.clip(RoundedCornerShape(7.dp)).background(p.key)
+                    .clickable { open = true }.padding(horizontal = 12.dp, vertical = 8.dp))
+            DropdownMenu(open, { open = false }, containerColor = p.body,
+                modifier = Modifier.heightIn(max = 320.dp)) {
+                options.forEach { o ->
+                    DropdownMenuItem(
+                        text = { Text(show(o), style = mono(14, if (o == value) p.accent else p.text, o == value)) },
+                        onClick = { onPick(o); open = false },
+                    )
+                }
+            }
+        }
+    }
+}
+
 @Composable
 private fun CaptureEditor(vm: MeterViewModel, slot: Int) {
-    val p = LocalPalette.current
-    val c = if (slot == 1) vm.prefs.cap1 else vm.prefs.cap2
-    var iso by remember(slot) { mutableStateOf(c.iso.toString()) }
-    var fps by remember(slot) { mutableStateOf(c.fps.toString().removeSuffix(".0")) }
-    var sh by remember(slot) { mutableStateOf(c.shutter) }
-    var f by remember(slot) { mutableStateOf(c.fStop?.toString() ?: "") }
-    var nd by remember(slot) { mutableStateOf(c.nd) }
-    fun commit() = vm.setCapture(slot, CaptureSettings(
-        iso.toIntOrNull() ?: c.iso, fps.replace(',', '.').toDoubleOrNull() ?: c.fps, sh.ifBlank { c.shutter },
-        f.replace(',', '.').toDoubleOrNull(), nd,
-    ))
+    var c by remember(slot) { mutableStateOf(if (slot == 1) vm.prefs.cap1 else vm.prefs.cap2) }
+    fun set(n: CaptureSettings) { c = n; vm.setCapture(slot, n) }
+    val isoList = CaptureOptions.isoFor(vm.cam(slot).isoMax)
     Column {
-        // Dos filas para que quepa dentro de la ventana de edición.
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Field(iso, { iso = it; commit() }, 72, true, "iso")
-            Field(fps, { fps = it; commit() }, 60, true, "fps")
-            Field(sh, { sh = it; commit() }, 80, false, "1/50")
+        Picker("iso", c.iso, isoList, { it.toString() }) { set(c.copy(iso = it)) }
+        Picker("fps", c.fps, CaptureOptions.FPS, CaptureOptions::fpsLabel) { set(c.copy(fps = it)) }
+        Picker("obturación", c.shutter, CaptureOptions.SHUTTER, { it }) { set(c.copy(shutter = it)) }
+        Picker("diafragma", c.fStop, CaptureOptions.F_STOP, CaptureOptions::fLabel) { set(c.copy(fStop = it)) }
+        Picker("filtro nd", c.nd, CaptureOptions.ND.map { it.first }, CaptureOptions::ndLabel) { set(c.copy(nd = it)) }
+        if (vm.cam(slot).isoMax == null) {
+            Text("iso máximo de esta cámara sin verificar", style = mono(9, LocalPalette.current.text.copy(alpha = 0.6f)),
+                modifier = Modifier.padding(top = 4.dp))
         }
-        Text("iso · fps · obturación (1/50 o 180°)", style = mono(9, p.text.copy(alpha = 0.6f)),
-            modifier = Modifier.padding(bottom = 8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-            Field(f, { f = it; commit() }, 72, true, "f/")
-            Field(nd, { nd = it; commit() }, 80, false, "nd 0.6")
-        }
-        Text("diafragma · filtro nd", style = mono(9, p.text.copy(alpha = 0.6f)))
     }
 }
 
@@ -290,7 +304,7 @@ fun CameraCards(vm: MeterViewModel, version: Int) {
                 // Resumen de captura; al tocarlo se edita en una ventana con espacio para el teclado.
                 val cap = if (slot == 1) vm.prefs.cap1 else vm.prefs.cap2
                 Text(
-                    "${cap.iso} iso · ${cl.lux0.data.fpsLabel(cap.fps)}p · ${cap.shutter} · f/${cap.fStop ?: "–"} · nd ${cap.nd.ifBlank { "–" }}  ✎",
+                    "${cap.iso} iso · ${CaptureOptions.fpsLabel(cap.fps)}p · ${cap.shutter} · ${CaptureOptions.fLabel(cap.fStop)} · ${cap.nd.ifBlank { "sin nd" }}  ✎",
                     style = mono(12, p.keyText),
                     modifier = Modifier.fillMaxWidth().padding(top = 6.dp).clickable { editing = slot }.padding(vertical = 4.dp),
                 )

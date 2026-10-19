@@ -16,6 +16,8 @@ data class CameraProfile(
     val tint: TintSystem,
     val verified: Boolean,
     val source: String,
+    /** ISO máximo útil; null = desconocido (se muestra la lista completa). */
+    val isoMax: Int? = null,
 ) {
     val label: String get() = "$brand $model".lowercase()
 }
@@ -48,6 +50,7 @@ fun CameraProfile.toJson(): JSONObject = JSONObject()
     .put("id", id).put("brand", brand).put("model", model)
     .put("kMin", kMin).put("kMax", kMax).put("kStep", kStep)
     .put("tint", tint.name).put("verified", verified).put("source", source)
+    .put("isoMax", isoMax ?: JSONObject.NULL)
 
 fun cameraProfileFromJson(o: JSONObject) = CameraProfile(
     id = o.getString("id"),
@@ -59,6 +62,7 @@ fun cameraProfileFromJson(o: JSONObject) = CameraProfile(
     tint = TintSystem.valueOf(o.getString("tint")),
     verified = o.optBoolean("verified", false),
     source = o.optString("source", ""),
+    isoMax = if (o.isNull("isoMax")) null else o.optInt("isoMax"),
 )
 
 fun parseProfiles(json: String): List<CameraProfile> {
