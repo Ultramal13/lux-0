@@ -49,8 +49,10 @@ private val HELP = listOf(
         "k mínimo / k máximo: rango de temperatura que acepta. paso: de cuánto en cuánto cambia (canon r5: 100 k); " +
         "la recomendación se redondea a ese paso. tinte: si tiene corrección verde/magenta. " +
         "iso máximo: limita la lista de iso de esa cámara.",
-    "captura (iso, fps, obturación, f/, nd)" to
+    "captura (iso, fps, obturación, f/, nd, ev)" to
         "cómo está configurada tu cámara al medir. se guarda con cada medición y sale en el csv para el colorista. " +
+        "comp. ev = compensación de exposición: no cambia el kelvin, pero en cámaras de diafragma fijo con exposición " +
+        "automática (como la luna ultra) es el ajuste que controlas para aclarar u oscurecer. " +
         "en la etapa 2 se usará para exposición (qué diafragma o nd usar) y para avisar parpadeo según fps y obturación.",
     "calibración" to
         "corrige la diferencia propia del sensor del celular. foto raw de la hoja blanca con la r5, lees los k con el cuentagotas " +

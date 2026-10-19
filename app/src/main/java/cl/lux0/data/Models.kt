@@ -8,9 +8,11 @@ data class CaptureSettings(
     val shutter: String = "1/50",
     val fStop: Double? = null,
     val nd: String = "",
+    /** Compensación de exposición en pasos (−4..+4). */
+    val ev: Double = 0.0,
 ) {
     fun toJson(): JSONObject = JSONObject().put("iso", iso).put("fps", fps).put("shutter", shutter)
-        .put("fStop", fStop ?: JSONObject.NULL).put("nd", nd)
+        .put("fStop", fStop ?: JSONObject.NULL).put("nd", nd).put("ev", ev)
 
     val label: String
         get() = buildString {
@@ -26,6 +28,7 @@ data class CaptureSettings(
             shutter = o.optString("shutter", "1/50"),
             fStop = if (o.isNull("fStop")) null else o.optDouble("fStop"),
             nd = o.optString("nd", ""),
+            ev = o.optDouble("ev", 0.0),
         )
     }
 }

@@ -20,6 +20,6 @@ class CsvExportTest {
         val row = csv.lines()[1]
         assertTrue(row.endsWith(";\"luz \"\"cálida\"\"; ventana\""))
         assertTrue(row.contains(";día 1;blanco/gris;4550;-0.0050;canon r5;"))
-        assertTrue(row.contains(";800;24;1/50;4.0;nd 0.6;"))
+        assertTrue(row.contains(";800;24;1/50;4.0;nd 0.6;0;"))
     }
 }

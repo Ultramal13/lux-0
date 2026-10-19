@@ -29,6 +29,18 @@ object CaptureOptions {
         "nd128" to 7, "nd256" to 8, "nd1000" to 10,
     )
 
+    /** Compensación EV de −4 a +4 en tercios. */
+    val EV: List<Double> = (-12..12).map { it / 3.0 }
+
+    fun evLabel(ev: Double): String {
+        val thirds = Math.round(ev * 3).toInt()
+        if (thirds == 0) return "0"
+        val sign = if (thirds > 0) "+" else "−"
+        val a = Math.abs(thirds); val whole = a / 3
+        val frac = when (a % 3) { 1 -> "⅓"; 2 -> "⅔"; else -> "" }
+        return sign + (if (whole > 0) "$whole" else "") + frac
+    }
+
     fun isoFor(max: Int?): List<Int> = if (max == null) ISO else ISO.filter { it <= max }
 
     fun fpsLabel(f: Double): String = when (f) {

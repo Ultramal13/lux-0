@@ -195,6 +195,7 @@ private fun CaptureEditor(vm: MeterViewModel, slot: Int) {
         Picker("obturación", c.shutter, CaptureOptions.SHUTTER, { it }) { set(c.copy(shutter = it)) }
         Picker("diafragma", c.fStop, CaptureOptions.F_STOP, CaptureOptions::fLabel) { set(c.copy(fStop = it)) }
         Picker("filtro nd", c.nd, CaptureOptions.ND.map { it.first }, CaptureOptions::ndLabel) { set(c.copy(nd = it)) }
+        Picker("comp. ev", c.ev, CaptureOptions.EV, CaptureOptions::evLabel) { set(c.copy(ev = it)) }
         if (vm.cam(slot).isoMax == null) {
             Text("iso máximo de esta cámara sin verificar", style = mono(9, LocalPalette.current.text.copy(alpha = 0.6f)),
                 modifier = Modifier.padding(top = 4.dp))
@@ -327,7 +328,7 @@ fun CameraCards(vm: MeterViewModel, version: Int) {
                 // Resumen de captura; al tocarlo se edita en una ventana con espacio para el teclado.
                 val cap = if (slot == 1) vm.prefs.cap1 else vm.prefs.cap2
                 Text(
-                    "${cap.iso} iso · ${CaptureOptions.fpsLabel(cap.fps)}p · ${cap.shutter} · ${CaptureOptions.fLabel(cap.fStop)} · ${cap.nd.ifBlank { "sin nd" }}  ✎",
+                    "${cap.iso} iso · ${CaptureOptions.fpsLabel(cap.fps)}p · ${cap.shutter} · ${CaptureOptions.fLabel(cap.fStop)} · ${cap.nd.ifBlank { "sin nd" }}${if (cap.ev != 0.0) " · ev " + CaptureOptions.evLabel(cap.ev) else ""}  ✎",
                     style = mono(12, p.keyText),
                     modifier = Modifier.fillMaxWidth().padding(top = 6.dp).clickable { editing = slot }.padding(vertical = 4.dp),
                 )

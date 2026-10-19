@@ -18,5 +18,9 @@ class CaptureOptionsTest {
         assertEquals("–", CaptureOptions.fLabel(null))
         assertEquals("nd8 · 3 pasos", CaptureOptions.ndLabel("nd8"))
         assertEquals("sin nd", CaptureOptions.ndLabel(""))
+        assertEquals("+1⅓", CaptureOptions.evLabel(4 / 3.0))
+        assertEquals("−⅔", CaptureOptions.evLabel(-2 / 3.0))
+        assertEquals("0", CaptureOptions.evLabel(0.0))
+        assertEquals(25, CaptureOptions.EV.size)
     }
 }
