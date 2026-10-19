@@ -6,6 +6,10 @@ import android.graphics.SurfaceTexture
 import android.os.PowerManager
 import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlin.math.sin
 import cl.lux0.camera.MeterCamera
 import cl.lux0.camera.Sample
 import cl.lux0.color.Calibration
@@ -51,7 +55,13 @@ data class UiState(
     val fresh: Boolean = false,
     /** Sube al tocar tras un error de cámara: fuerza un reintento. */
     val retry: Int = 0,
+    /** Emulador: lecturas simuladas, nunca en un teléfono real. */
+    val demo: Boolean = false,
 )
+
+/** Detecta el emulador de Android (la cámara virtual no permite medir color). */
+val IS_EMULATOR: Boolean = android.os.Build.HARDWARE.contains("ranchu") ||
+    android.os.Build.HARDWARE.contains("goldfish") || android.os.Build.FINGERPRINT.contains("generic")
 
 const val IDLE_MS = 90_000L
 val INTERVALS = listOf(500L, 1000L, 2000L)
@@ -59,7 +69,7 @@ val INTERVALS = listOf(500L, 1000L, 2000L)
 class MeterViewModel(app: Application) : AndroidViewModel(app) {
     val store = Store(app)
     val prefs = Prefs(app)
-    private val _state = MutableStateFlow(UiState(theme = prefs.theme, calOffset = prefs.calOffsetMired))
+    private val _state = MutableStateFlow(UiState(theme = prefs.theme, calOffset = prefs.calOffsetMired, demo = IS_EMULATOR))
     val state: StateFlow<UiState> = _state
 
     var cameras: List<CameraProfile> = store.allCameras()
@@ -75,6 +85,21 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     init {
         power.addThermalStatusListener(app.mainExecutor, thermal)
         onThermal(power.currentThermalStatus)
+        if (IS_EMULATOR) startDemo()
+    }
+
+    /** Modo demo: una luz que varía lento entre ~4100 y ~4900 K con leve magenta. */
+    private fun startDemo() = viewModelScope.launch {
+        var t = 0.0
+        while (true) {
+            delay(prefs.intervalMs)
+            val st = _state.value
+            if (st.hold || st.idle || st.mode !in listOf(1, 9)) continue
+            t += 0.15
+            val cct = Calibration.apply(4500 + 400 * sin(t) + 60 * sin(t * 3.1), prefs.calOffsetMired)
+            val duv = -0.004 + 0.003 * sin(t * 0.7)
+            _state.update { it.copy(reading = Reading(cct, duv, 0.0, 0.0, false), warning = null, error = null, fresh = true) }
+        }
     }
 
     /** Ligero: mide cada 3 s. Moderado o más: apaga la cámara hasta que se enfríe. */
@@ -109,6 +134,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun startCamera(texture: SurfaceTexture) {
+        if (IS_EMULATOR) return
         onThermal(power.currentThermalStatus)
         camera.calOffsetMired = prefs.calOffsetMired
         camera.start(texture, prefs.frontCamera)
@@ -202,7 +228,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
         }
         val c1 = cam(1); val c2 = cam(2)
         store.save(Measurement(
-            id, store.activeSession().id, id, SOURCES[_state.value.source], r.cct, r.duv,
+            id, store.activeSession().id, id, if (_state.value.demo) "demo (simulado)" else SOURCES[_state.value.source], r.cct, r.duv,
             c1.label, recText(c1, r), c2.label, recText(c2, r), prefs.cap1, prefs.cap2, path, "",
         ))
         bump()

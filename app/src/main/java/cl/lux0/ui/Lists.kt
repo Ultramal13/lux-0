@@ -69,14 +69,14 @@ private fun Field(value: String, onChange: (String) -> Unit, width: Int, number:
 }
 
 @Composable
-private fun Dialog(title: String, onDismiss: () -> Unit, confirm: String, onConfirm: () -> Unit, content: @Composable () -> Unit) {
+private fun Dialog(title: String, onDismiss: () -> Unit, confirm: String, onConfirm: () -> Unit, showCancel: Boolean = true, content: @Composable () -> Unit) {
     val p = LocalPalette.current
     AlertDialog(
         onDismissRequest = onDismiss, containerColor = p.body,
         title = { Text(title, style = mono(14, p.text, true)) },
         text = content,
         confirmButton = { Text(confirm, style = mono(13, p.accent, true), modifier = Modifier.clickable(onClick = onConfirm).padding(8.dp)) },
-        dismissButton = { Text("cancelar", style = mono(13, p.text), modifier = Modifier.clickable(onClick = onDismiss).padding(8.dp)) },
+        dismissButton = if (!showCancel) null else { { Text("cancelar", style = mono(13, p.text), modifier = Modifier.clickable(onClick = onDismiss).padding(8.dp)) } },
     )
 }
 
@@ -315,7 +315,7 @@ fun CameraCards(vm: MeterViewModel, version: Int) {
     if (custom) CustomCameraDialog(vm) { custom = false }
     if (editing != 0) {
         val slot = editing
-        Dialog("captura cámara $slot · ${vm.cam(slot).label}", { editing = 0; vm.bump() }, "listo", { editing = 0; vm.bump() }) {
+        Dialog("captura cámara $slot · ${vm.cam(slot).label}", { editing = 0; vm.bump() }, "listo", { editing = 0; vm.bump() }, showCancel = false) {
             CaptureEditor(vm, slot)
         }
     }

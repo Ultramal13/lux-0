@@ -210,6 +210,7 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
             Text("${SOURCES[st.source]} · ${vm.prefs.reflectance}%", style = mono(10, p.screenDim))
             Spacer(Modifier.weight(1f))
             val status = when {
+                st.demo -> "● demo"
                 st.hot -> "■ caliente"
                 st.idle -> "■ pausa"
                 st.error != null -> "● sin cámara"
@@ -231,6 +232,7 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
             }
         }
         val alert = when {
+            st.demo -> "modo demo · lecturas simuladas (emulador)"
             st.hot -> "teléfono caliente: medición en pausa hasta que se enfríe"
             st.idle -> "en pausa para ahorrar batería · toca la pantalla"
             else -> st.error ?: st.warning
