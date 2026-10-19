@@ -25,6 +25,8 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -186,16 +188,6 @@ fun SettingsPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
     val p = LocalPalette.current
     var custom by remember { mutableStateOf(false) }
     Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-        listOf(1, 2).forEach { slot ->
-            SettingRow("cámara $slot") {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Seg(listOf("◀"), -1, { vm.cycleCam(slot, -1) })
-                    Text("  ${vm.cam(slot).label}${if (!vm.cam(slot).verified) " *" else ""}  ", style = mono(13, p.text, true))
-                    Seg(listOf("▶"), -1, { vm.cycleCam(slot, 1) })
-                }
-            }
-            SettingRow("captura cámara $slot") { key(st.version) { CaptureEditor(vm, slot) } }
-        }
         Text("* datos sin verificar con el fabricante", style = mono(9, p.text.copy(alpha = 0.6f)))
         Text("+ nueva cámara personalizada", style = mono(12, p.accent, true),
             modifier = Modifier.clickable { custom = true }.padding(vertical = 8.dp))
@@ -208,8 +200,7 @@ fun SettingsPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
             Field(r, { r = it.filter(Char::isDigit).take(2); r.toIntOrNull()?.let { v -> vm.prefs.reflectance = v; vm.bump() } }, 70, true)
         }
         SettingRow("intervalo entre mediciones") {
-            val opts = listOf(500L, 1000L, 2000L)
-            Seg(listOf("0,5 s", "1 s", "2 s"), opts.indexOf(vm.prefs.intervalMs), { vm.prefs.intervalMs = opts[it]; vm.bump() })
+            Seg(listOf("0,5 s", "1 s", "2 s"), INTERVALS.indexOf(vm.prefs.intervalMs), { vm.setInterval(INTERVALS[it]) })
         }
         SettingRow("cámara del celular") {
             Seg(listOf("trasera", "frontal"), if (vm.prefs.frontCamera) 1 else 0, { vm.prefs.frontCamera = it == 1; vm.bump() })
@@ -227,13 +218,17 @@ fun SettingsPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
         Spacer(Modifier.height(12.dp))
     }
 
-    if (custom) {
+    if (custom) CustomCameraDialog(vm) { custom = false }
+}
+
+@Composable
+fun CustomCameraDialog(vm: MeterViewModel, onDone: () -> Unit) {
         var name by remember { mutableStateOf("") }
         var kMin by remember { mutableStateOf("2500") }
         var kMax by remember { mutableStateOf("10000") }
         var step by remember { mutableStateOf("100") }
         var tint by remember { mutableStateOf(0) }
-        Dialog("cámara personalizada", { custom = false }, "guardar", {
+        Dialog("cámara personalizada", onDone, "guardar", {
             val lo = kMin.toIntOrNull(); val hi = kMax.toIntOrNull(); val s = step.toIntOrNull()
             if (name.isNotBlank() && lo != null && hi != null && s != null && lo < hi && s > 0) {
                 val parts = name.trim().split(" ", limit = 2)
@@ -241,7 +236,7 @@ fun SettingsPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
                     "custom-" + System.currentTimeMillis(), parts[0], parts.getOrElse(1) { "" }, lo, hi, s,
                     if (tint == 1) TintSystem.CANON_GM9 else TintSystem.NONE, true, "personalizada",
                 ))
-                custom = false
+                onDone()
             }
         }) {
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -253,7 +248,43 @@ fun SettingsPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
             }
         }
     }
-}
 
+/** Tarjetas Cámara 1 y 2 de la pantalla de medición: modelo (menú) y ajustes de captura. */
 @Composable
-private fun key(k: Any?, content: @Composable () -> Unit) = androidx.compose.runtime.key(k) { content() }
+fun CameraCards(vm: MeterViewModel, version: Int) {
+    val p = LocalPalette.current
+    var custom by remember { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf(1, 2).forEach { slot ->
+            val cam = vm.cam(slot)
+            var open by remember { mutableStateOf(false) }
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.key).padding(10.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(18.dp).clip(RoundedCornerShape(9.dp)).background(p.knobs[slot - 1]),
+                        contentAlignment = Alignment.Center) {
+                        Text("$slot", style = mono(10, if (p.red) p.screenText else androidx.compose.ui.graphics.Color.Black, true))
+                    }
+                    Box {
+                        Text("  cámara $slot: ${cam.label}${if (!cam.verified) " *" else ""}  ▾", style = mono(13, p.keyText, true),
+                            modifier = Modifier.clickable { open = true }.padding(vertical = 4.dp))
+                        DropdownMenu(open, { open = false }, containerColor = p.body) {
+                            vm.cameras.forEach { c ->
+                                DropdownMenuItem(
+                                    text = { Text(c.label + if (!c.verified) " *" else "", style = mono(13, p.text, c.id == cam.id)) },
+                                    onClick = { vm.selectCam(slot, c.id); open = false },
+                                )
+                            }
+                            DropdownMenuItem(
+                                text = { Text("+ cámara personalizada…", style = mono(13, p.accent, true)) },
+                                onClick = { open = false; custom = true },
+                            )
+                        }
+                    }
+                }
+                Box(Modifier.padding(top = 6.dp)) { CaptureEditor(vm, slot) }
+            }
+        }
+        Text("* datos sin verificar con el fabricante", style = mono(9, p.text.copy(alpha = 0.6f)))
+    }
+    if (custom) CustomCameraDialog(vm) { custom = false }
+}

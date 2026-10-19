@@ -10,16 +10,19 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CaptureRequest
-import android.hardware.camera2.CaptureResult
-import android.hardware.camera2.TotalCaptureResult
 import android.hardware.camera2.params.ColorSpaceTransform
 import android.hardware.camera2.params.MeteringRectangle
 import android.hardware.camera2.params.OutputConfiguration
+import android.hardware.camera2.params.RggbChannelVector
 import android.hardware.camera2.params.SessionConfiguration
+import android.hardware.camera2.params.TonemapCurve
+import android.media.Image
 import android.media.ImageReader
 import android.os.Handler
 import android.os.HandlerThread
+import android.os.SystemClock
 import android.util.Log
+import android.util.Range
 import android.util.Size
 import android.view.Surface
 import cl.lux0.color.Calibration
@@ -29,11 +32,19 @@ import java.util.concurrent.Executor
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-data class Sample(val reading: Reading?, val warning: String?, val roi: RoiResult)
+data class Sample(val reading: Reading?, val warning: String?, val roi: RoiResult?)
+
+/** Fracción del lado corto del cuadro que mide el círculo. La mira del visor usa la misma. */
+const val ROI_FRACTION = 0.19f
 
 /**
- * Preview a una SurfaceTexture + captura RAW periódica. El color sale del RAW y de las
- * matrices del sensor; el balance automático del teléfono no interviene.
+ * Medición liviana: vista previa chica + un flujo YUV chico en la misma petición repetida.
+ * El sensor queda en su modo de visor (como la app de cámara). El procesamiento de color del
+ * teléfono se neutraliza (AWB apagado, matriz identidad, ganancias 1, curva lineal), así que el
+ * RGB promedio del círculo es el del sensor y se convierte a xy con las matrices del propio sensor.
+ *
+ * Todas las operaciones de cámara corren en un único hilo propio que vive lo mismo que el objeto,
+ * así un stop() que llega mientras la cámara se abre nunca deja el dispositivo abierto.
  */
 class MeterCamera(
     context: Context,
@@ -41,40 +52,26 @@ class MeterCamera(
     private val onError: (String) -> Unit,
 ) {
     private val manager = context.getSystemService(CameraManager::class.java)
-    private var thread: HandlerThread? = null
-    private var handler: Handler? = null
+    private val thread = HandlerThread("lux0-cam").also { it.start() }
+    private val handler = Handler(thread.looper)
+    private val exec = Executor { handler.post(it) }
+
+    // Solo se tocan desde el hilo de cámara.
     private var device: CameraDevice? = null
     private var session: CameraCaptureSession? = null
-    private var rawReader: ImageReader? = null
+    private var reader: ImageReader? = null
     private var previewSurface: Surface? = null
     private var chars: CameraCharacteristics? = null
-    @Volatile private var lastResult: CaptureResult? = null
+    private var lastProcessed = 0L
     private val history = ArrayDeque<Pair<Double, Double>>()
 
+    @Volatile private var generation = 0
+    @Volatile private var released = false
     @Volatile var intervalMs: Long = 1000
     @Volatile var calOffsetMired: Double = 0.0
-    @Volatile var paused: Boolean = false
 
-    /** Tamaño del buffer de preview elegido (ancho > alto, orientación del sensor). */
-    var previewSize: Size = Size(1280, 960)
+    var previewSize: Size = Size(640, 480)
         private set
-
-    private val poll = object : Runnable {
-        override fun run() {
-            if (!paused) captureRaw()
-            handler?.postDelayed(this, intervalMs)
-        }
-    }
-
-    fun choosePreviewSize(front: Boolean): Size? {
-        val id = findCamera(front) ?: return null
-        val map = manager.getCameraCharacteristics(id)
-            .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP) ?: return null
-        val sizes = map.getOutputSizes(SurfaceTexture::class.java) ?: return null
-        previewSize = sizes.filter { it.width * 3 == it.height * 4 && it.width <= 1920 }
-            .maxByOrNull { it.width } ?: sizes.minBy { abs(it.width - 1280) }
-        return previewSize
-    }
 
     private fun findCamera(front: Boolean): String? {
         val want = if (front) CameraCharacteristics.LENS_FACING_FRONT else CameraCharacteristics.LENS_FACING_BACK
@@ -83,157 +80,221 @@ class MeterCamera(
         }
     }
 
-    @SuppressLint("MissingPermission")
+    /** Elige el tamaño 4:3 más chico ≥ 640 px para preview y análisis. */
+    fun choosePreviewSize(front: Boolean): Size {
+        val sizes = findCamera(front)
+            ?.let { manager.getCameraCharacteristics(it).get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP) }
+            ?.getOutputSizes(ImageFormat.YUV_420_888)
+            ?.takeIf { it.isNotEmpty() }
+            ?: return previewSize
+        previewSize = sizes.filter { it.width * 3 == it.height * 4 && it.width >= 640 }
+            .minByOrNull { it.width } ?: sizes.minBy { abs(it.width - 640) }
+        return previewSize
+    }
+
     fun start(texture: SurfaceTexture, front: Boolean) {
-        stop()
-        val id = findCamera(front) ?: return onError("no se encontró la cámara")
-        val c = manager.getCameraCharacteristics(id)
-        val caps = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES) ?: intArrayOf()
-        if (CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_RAW !in caps) {
-            return onError("esta cámara no entrega raw")
-        }
-        if (c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM1) == null) {
-            return onError("la cámara no entrega matrices de color")
-        }
-        chars = c
-        val map = c.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)!!
-        val rawSize = map.getOutputSizes(ImageFormat.RAW_SENSOR).minBy { it.width.toLong() * it.height }
-        val t = HandlerThread("lux0-cam").also { it.start() }
-        thread = t
-        val h = Handler(t.looper)
-        handler = h
-        rawReader = ImageReader.newInstance(rawSize.width, rawSize.height, ImageFormat.RAW_SENSOR, 2).apply {
-            setOnImageAvailableListener({ r -> r.acquireLatestImage()?.use { processRaw(it) } }, h)
-        }
-        texture.setDefaultBufferSize(previewSize.width, previewSize.height)
-        previewSurface = Surface(texture)
-        manager.openCamera(id, object : CameraDevice.StateCallback() {
-            override fun onOpened(d: CameraDevice) { device = d; createSession(d) }
-            override fun onDisconnected(d: CameraDevice) { d.close(); device = null }
-            override fun onError(d: CameraDevice, error: Int) {
-                d.close(); device = null
-                onError("error de cámara ($error)")
+        if (released) return
+        val gen = ++generation
+        handler.post { startInternal(texture, front, gen) }
+    }
+
+    fun stop() {
+        generation++
+        if (!released) handler.post { closeAll() }
+    }
+
+    /** Libera la cámara y termina el hilo. Llamar una sola vez (onCleared). */
+    fun release() {
+        generation++
+        released = true
+        handler.post { closeAll(); thread.quitSafely() }
+    }
+
+    private fun fail(gen: Int, msg: String) {
+        if (gen != generation) return
+        closeAll()
+        onError(msg)
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun startInternal(texture: SurfaceTexture, front: Boolean, gen: Int) {
+        closeAll()
+        if (gen != generation) return
+        try {
+            val id = findCamera(front) ?: return fail(gen, "no se encontró la cámara")
+            val c = manager.getCameraCharacteristics(id)
+            val caps = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES) ?: intArrayOf()
+            if (CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_POST_PROCESSING !in caps) {
+                return fail(gen, "esta cámara no permite controlar el color")
             }
-        }, h)
-    }
-
-    private fun createSession(d: CameraDevice) {
-        val h = handler ?: return
-        val exec = Executor { h.post(it) }
-        val outs = listOf(OutputConfiguration(previewSurface!!), OutputConfiguration(rawReader!!.surface))
-        d.createCaptureSession(SessionConfiguration(SessionConfiguration.SESSION_REGULAR, outs, exec,
-            object : CameraCaptureSession.StateCallback() {
-                override fun onConfigured(s: CameraCaptureSession) {
-                    session = s
-                    s.setRepeatingRequest(baseRequest(d, false).build(), null, h)
-                    h.postDelayed(poll, 600)
+            if (c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM1) == null) {
+                return fail(gen, "la cámara no entrega matrices de color")
+            }
+            chars = c
+            history.clear()
+            val size = choosePreviewSize(front)
+            reader = ImageReader.newInstance(size.width, size.height, ImageFormat.YUV_420_888, 2).apply {
+                setOnImageAvailableListener({ r ->
+                    val img = try { r.acquireLatestImage() } catch (e: IllegalStateException) { null }
+                        ?: return@setOnImageAvailableListener
+                    try { maybeProcess(img, gen) } finally { img.close() }
+                }, handler)
+            }
+            texture.setDefaultBufferSize(size.width, size.height)
+            previewSurface = Surface(texture)
+            manager.openCamera(id, exec, object : CameraDevice.StateCallback() {
+                override fun onOpened(d: CameraDevice) {
+                    if (gen != generation) { d.close(); return }
+                    device = d
+                    createSession(d, gen)
                 }
-                override fun onConfigureFailed(s: CameraCaptureSession) = onError("no se pudo configurar la cámara")
-            }))
+                override fun onDisconnected(d: CameraDevice) {
+                    d.close()
+                    if (device == d) device = null
+                    fail(gen, "la cámara se desconectó · toca para reintentar")
+                }
+                override fun onError(d: CameraDevice, error: Int) {
+                    d.close()
+                    if (device == d) device = null
+                    fail(gen, "error de cámara ($error) · toca para reintentar")
+                }
+            })
+        } catch (e: Exception) {
+            Log.w("lux0", "start", e)
+            fail(gen, "no se pudo abrir la cámara · toca para reintentar")
+        }
     }
 
-    private fun baseRequest(d: CameraDevice, withRaw: Boolean): CaptureRequest.Builder {
-        val b = d.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
-        b.addTarget(previewSurface!!)
-        if (withRaw) b.addTarget(rawReader!!.surface)
+    private fun createSession(d: CameraDevice, gen: Int) {
+        val preview = previewSurface ?: return
+        val yuv = reader?.surface ?: return
+        try {
+            d.createCaptureSession(SessionConfiguration(SessionConfiguration.SESSION_REGULAR,
+                listOf(OutputConfiguration(preview), OutputConfiguration(yuv)), exec,
+                object : CameraCaptureSession.StateCallback() {
+                    override fun onConfigured(s: CameraCaptureSession) {
+                        if (gen != generation) { s.close(); return }
+                        session = s
+                        try {
+                            s.setRepeatingRequest(request(d, preview, yuv), null, handler)
+                        } catch (e: Exception) {
+                            Log.w("lux0", "repeating", e)
+                            fail(gen, "no se pudo iniciar la medición · toca para reintentar")
+                        }
+                    }
+                    override fun onConfigureFailed(s: CameraCaptureSession) =
+                        fail(gen, "no se pudo configurar la cámara · toca para reintentar")
+                }))
+        } catch (e: Exception) {
+            Log.w("lux0", "createSession", e)
+            fail(gen, "no se pudo configurar la cámara · toca para reintentar")
+        }
+    }
+
+    private fun request(d: CameraDevice, preview: Surface, yuv: Surface): CaptureRequest {
         val c = chars!!
+        val b = d.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
+        b.addTarget(preview); b.addTarget(yuv)
+        // Exposición automática medida en el mismo círculo, ~−1 EV para no quemar el blanco.
         val active = c.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE)!!
-        val r = active.width() / 10
+        val r = (minOf(active.width(), active.height()) * ROI_FRACTION).toInt()
         val cx = active.centerX(); val cy = active.centerY()
         b.set(CaptureRequest.CONTROL_AE_REGIONS,
             arrayOf(MeteringRectangle(Rect(cx - r, cy - r, cx + r, cy + r), MeteringRectangle.METERING_WEIGHT_MAX)))
-        // ~−1 EV para que una hoja blanca no se queme en el RAW.
-        val step = c.get(CameraCharacteristics.CONTROL_AE_COMPENSATION_STEP)?.toDouble() ?: 1.0 / 3
-        val range = c.get(CameraCharacteristics.CONTROL_AE_COMPENSATION_RANGE)
+        val step = c.get(CameraCharacteristics.CONTROL_AE_COMPENSATION_STEP)?.toDouble() ?: (1.0 / 3)
         val comp = (-1.0 / step).roundToInt()
-        b.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION, range?.clamp(comp) ?: comp)
-        return b
-    }
-
-    private fun captureRaw() {
-        val d = device ?: return
-        val s = session ?: return
-        try {
-            s.capture(baseRequest(d, true).build(), object : CameraCaptureSession.CaptureCallback() {
-                override fun onCaptureCompleted(cs: CameraCaptureSession, req: CaptureRequest, res: TotalCaptureResult) {
-                    lastResult = res
-                }
-            }, handler)
-        } catch (e: Exception) {
-            Log.w("lux0", "captura raw", e)
+        b.set(CaptureRequest.CONTROL_AE_EXPOSURE_COMPENSATION,
+            c.get(CameraCharacteristics.CONTROL_AE_COMPENSATION_RANGE)?.clamp(comp) ?: comp)
+        // Cuadros por segundo bajos: menos trabajo y menos calor.
+        c.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES)
+            ?.filter { it.upper >= 10 }
+            ?.minWithOrNull(compareBy<Range<Int>> { it.upper }.thenBy { it.lower })
+            ?.let { b.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, it) }
+        // Color neutro: nada de balance automático ni realce del teléfono.
+        b.set(CaptureRequest.CONTROL_AWB_MODE, CaptureRequest.CONTROL_AWB_MODE_OFF)
+        b.set(CaptureRequest.COLOR_CORRECTION_MODE, CaptureRequest.COLOR_CORRECTION_MODE_TRANSFORM_MATRIX)
+        b.set(CaptureRequest.COLOR_CORRECTION_GAINS, RggbChannelVector(1f, 1f, 1f, 1f))
+        b.set(CaptureRequest.COLOR_CORRECTION_TRANSFORM, ColorSpaceTransform(intArrayOf(
+            1, 1, 0, 1, 0, 1,
+            0, 1, 1, 1, 0, 1,
+            0, 1, 0, 1, 1, 1,
+        )))
+        b.set(CaptureRequest.CONTROL_EFFECT_MODE, CaptureRequest.CONTROL_EFFECT_MODE_OFF)
+        val tm = c.get(CameraCharacteristics.TONEMAP_AVAILABLE_TONE_MAP_MODES) ?: intArrayOf()
+        if (CaptureRequest.TONEMAP_MODE_GAMMA_VALUE in tm) {
+            b.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_GAMMA_VALUE)
+            b.set(CaptureRequest.TONEMAP_GAMMA, 1.0f)
+        } else if (CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE in tm) {
+            val lin = floatArrayOf(0f, 0f, 1f, 1f)
+            b.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_CONTRAST_CURVE)
+            b.set(CaptureRequest.TONEMAP_CURVE, TonemapCurve(lin, lin, lin))
         }
+        return b.build()
     }
 
     private fun transform(t: ColorSpaceTransform?): DoubleArray? = t?.let {
         DoubleArray(9) { i -> it.getElement(i % 3, i / 3).toDouble() }
     }
 
+    // Iluminantes EXIF/DNG → K.
     private fun illuminantK(code: Int?): Double = when (code) {
-        17 -> 2856.0; 21 -> 6504.0; 23 -> 5003.0; 20 -> 5503.0; 22 -> 7504.0
-        3 -> 2850.0; 24 -> 3200.0; 1 -> 5500.0; else -> 5000.0
+        1 -> 5500.0; 2 -> 4150.0; 3 -> 2850.0; 4 -> 5500.0; 9 -> 5500.0; 10 -> 6500.0; 11 -> 7500.0
+        12 -> 6430.0; 13 -> 5000.0; 14 -> 4150.0; 15 -> 3450.0; 17 -> 2856.0; 18 -> 4874.0
+        19 -> 6774.0; 20 -> 5503.0; 21 -> 6504.0; 22 -> 7504.0; 23 -> 5003.0; 24 -> 3200.0
+        else -> 5000.0
     }
 
-    private fun processRaw(img: android.media.Image) {
+    private fun maybeProcess(img: Image, gen: Int) {
+        if (gen != generation) return
+        val now = SystemClock.elapsedRealtime()
+        if (now - lastProcessed < intervalMs) return
+        lastProcessed = now
         val c = chars ?: return
-        val plane = img.planes[0]
-        val stridePx = plane.rowStride / 2
-        val w = img.width; val h = img.height
-        // Recorte cuadrado centrado (origen par para conservar la fase del mosaico).
-        val radius = (minOf(w, h) * 0.08).toInt().coerceAtLeast(8)
-        val side = radius * 2
-        val x0 = (w / 2 - radius) and 1.inv()
-        val y0 = (h / 2 - radius) and 1.inv()
-        val crop = ShortArray(side * side)
-        val sb = plane.buffer.order(java.nio.ByteOrder.LITTLE_ENDIAN).asShortBuffer()
-        for (row in 0 until side) {
-            sb.position((y0 + row) * stridePx + x0)
-            sb.get(crop, row * side, side)
-        }
-        val res = lastResult
-        val dynBlack = res?.get(CaptureResult.SENSOR_DYNAMIC_BLACK_LEVEL)
-        val black = dynBlack ?: c.get(CameraCharacteristics.SENSOR_BLACK_LEVEL_PATTERN)!!.let { p ->
-            FloatArray(4) { i -> p.getOffsetForIndex(i % 2, i / 2).toFloat() }
-        }
-        val white = res?.get(CaptureResult.SENSOR_DYNAMIC_WHITE_LEVEL)
-            ?: c.get(CameraCharacteristics.SENSOR_INFO_WHITE_LEVEL)!!
-        val cfa = c.get(CameraCharacteristics.SENSOR_INFO_COLOR_FILTER_ARRANGEMENT) ?: 0
-        val roi = computeRoi(crop, side, side, side, cfa, black, white, radius, radius, radius)
-        val warn = roi.warning()
-        if (warn != null || roi.g <= 0) {
-            onSample(Sample(null, warn ?: "sin señal", roi)); return
-        }
-        val cm1 = transform(c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM1))!!
-        val cm2 = transform(c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM2)) ?: cm1
-        val id = doubleArrayOf(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
-        val cc1 = transform(c.get(CameraCharacteristics.SENSOR_CALIBRATION_TRANSFORM1)) ?: id
-        val cc2 = transform(c.get(CameraCharacteristics.SENSOR_CALIBRATION_TRANSFORM2)) ?: cc1
-        val t1 = illuminantK(c.get(CameraCharacteristics.SENSOR_REFERENCE_ILLUMINANT1))
-        val t2 = c.get(CameraCharacteristics.SENSOR_REFERENCE_ILLUMINANT2)?.toInt()?.let { illuminantK(it) } ?: t1
         try {
+            val p = img.planes
+            val roi = computeRoiYuv(
+                Plane(p[0].buffer, p[0].rowStride, p[0].pixelStride),
+                Plane(p[1].buffer, p[1].rowStride, p[1].pixelStride),
+                Plane(p[2].buffer, p[2].rowStride, p[2].pixelStride),
+                img.width, img.height, (minOf(img.width, img.height) * ROI_FRACTION).toInt().coerceAtLeast(8),
+            )
+            val warn = roi.warning()
+            if (warn != null || roi.g <= 0.001) { onSample(Sample(null, warn ?: "sin señal", roi)); return }
+            val cm1 = transform(c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM1))!!
+            val cm2 = transform(c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM2)) ?: cm1
+            val id = doubleArrayOf(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+            val cc1 = transform(c.get(CameraCharacteristics.SENSOR_CALIBRATION_TRANSFORM1)) ?: id
+            val cc2 = transform(c.get(CameraCharacteristics.SENSOR_CALIBRATION_TRANSFORM2)) ?: cc1
+            val t1 = illuminantK(c.get(CameraCharacteristics.SENSOR_REFERENCE_ILLUMINANT1))
+            val t2 = c.get(CameraCharacteristics.SENSOR_REFERENCE_ILLUMINANT2)?.toInt()?.let { illuminantK(it) } ?: t1
             val xy = ColorMath.cameraNeutralToXy(
                 doubleArrayOf(roi.r / roi.g, 1.0, roi.b / roi.g), cm1, cm2, cc1, cc2, t1, t2)
+            if (xy.first.isNaN() || xy.second.isNaN()) { onSample(Sample(null, "no se pudo calcular", roi)); return }
             history.addLast(xy)
             while (history.size > 3) history.removeFirst()
-            val ax = history.sumOf { it.first } / history.size
-            val ay = history.sumOf { it.second } / history.size
-            val r = ColorMath.xyToReading(ax, ay)
-            val cct = Calibration.apply(r.cct, calOffsetMired)
-            val tinted = if (abs(r.duv) > 0.02) "no parece neutro o luz muy teñida" else null
-            onSample(Sample(r.copy(cct = cct), tinted, roi))
+            val r = ColorMath.xyToReading(history.sumOf { it.first } / history.size, history.sumOf { it.second } / history.size)
+            val warning = when {
+                r.outOfRange -> "fuera de rango (1000–20000 k)"
+                abs(r.duv) > 0.02 -> "no parece neutro o luz muy teñida"
+                else -> null
+            }
+            onSample(Sample(r.copy(cct = Calibration.apply(r.cct, calOffsetMired)), warning, roi))
         } catch (e: Exception) {
             Log.w("lux0", "cálculo de color", e)
-            onSample(Sample(null, "no se pudo calcular", roi))
+            onSample(Sample(null, "no se pudo calcular", null))
         }
     }
 
-    fun stop() {
-        handler?.removeCallbacks(poll)
+    /** Cierra sesión, dispositivo, lector y superficie. Solo en el hilo de cámara. */
+    private fun closeAll() {
         try { session?.close() } catch (_: Exception) {}
         session = null
-        device?.close(); device = null
-        rawReader?.close(); rawReader = null
-        previewSurface?.release(); previewSurface = null
-        thread?.quitSafely(); thread = null; handler = null
+        try { device?.close() } catch (_: Exception) {}
+        device = null
+        try { reader?.close() } catch (_: Exception) {}
+        reader = null
+        previewSurface?.release()
+        previewSurface = null
         history.clear()
     }
 }

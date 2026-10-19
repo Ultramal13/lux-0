@@ -26,7 +26,17 @@ class Store(private val context: Context) {
 
     private fun load() {
         if (!file.exists()) return
-        val o = JSONObject(file.readText())
+        try {
+            parse(JSONObject(file.readText()))
+        } catch (e: Exception) {
+            // Archivo dañado: se respalda y se parte de cero en vez de caerse en cada arranque.
+            android.util.Log.w("lux0", "lux0.json dañado", e)
+            file.copyTo(File(file.path + ".bak"), overwrite = true)
+            sessions.clear(); measurements.clear(); custom.clear(); activeId = 0L
+        }
+    }
+
+    private fun parse(o: JSONObject) {
         o.optJSONArray("sessions")?.let { a -> for (i in 0 until a.length()) sessions += Session.fromJson(a.getJSONObject(i)) }
         o.optJSONArray("measurements")?.let { a -> for (i in 0 until a.length()) measurements += Measurement.fromJson(a.getJSONObject(i)) }
         o.optJSONArray("custom")?.let { a -> for (i in 0 until a.length()) custom += cameraProfileFromJson(a.getJSONObject(i)) }
@@ -40,8 +50,11 @@ class Store(private val context: Context) {
             .put("custom", JSONArray(custom.map { it.toJson() }))
             .put("active", activeId)
         val tmp = File(file.path + ".tmp")
-        tmp.writeText(o.toString())
-        tmp.renameTo(file)
+        java.io.FileOutputStream(tmp).use { out ->
+            out.write(o.toString().toByteArray())
+            out.fd.sync()
+        }
+        if (!tmp.renameTo(file)) { file.writeText(o.toString()); tmp.delete() }
     }
 
     fun sessions(): List<Session> = sessions.sortedByDescending { it.created }

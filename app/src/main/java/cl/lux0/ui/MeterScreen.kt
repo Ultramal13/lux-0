@@ -30,6 +30,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -46,12 +47,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import cl.lux0.camera.ROI_FRACTION
 import cl.lux0.color.ColorMath
 import cl.lux0.color.Reading
 import java.util.Locale
 import kotlin.math.roundToInt
 
-val MODE_NAMES = mapOf(1 to "color", 7 to "historial", 8 to "ajustes", 9 to "calibrar")
+val MODE_NAMES = mapOf(1 to "color", 7 to "sesiones", 8 to "ajustes", 9 to "calibrar")
 
 @Composable
 fun Header(mode: Int, theme: String, onTheme: () -> Unit) {
@@ -68,20 +70,29 @@ fun Header(mode: Int, theme: String, onTheme: () -> Unit) {
     }
 }
 
-/** Visor en vivo: TextureView recortado a cuadrado, con mira circular. */
+/**
+ * Visor en vivo: TextureView recortado a cuadrado, en gris (la imagen va sin corrección de color),
+ * con mira circular. La cámara corre solo si la app está visible, la superficie existe y no hay
+ * pausa por inactividad ni por calor.
+ */
 @Composable
-fun Viewfinder(vm: MeterViewModel, size: Int, onView: (TextureView?) -> Unit) {
+fun Viewfinder(vm: MeterViewModel, size: Int, active: Boolean, retry: Int, onView: (TextureView?) -> Unit) {
     val p = LocalPalette.current
     val owner = LocalLifecycleOwner.current
-    val holder = remember { mutableStateOf<TextureView?>(null) }
+    var texture by remember { mutableStateOf<SurfaceTexture?>(null) }
+    var resumed by remember { mutableStateOf(owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) }
     DisposableEffect(owner) {
         val obs = LifecycleEventObserver { _, e ->
-            val tv = holder.value
-            if (e == Lifecycle.Event.ON_PAUSE) vm.stopCamera()
-            if (e == Lifecycle.Event.ON_RESUME && tv?.isAvailable == true) vm.startCamera(tv.surfaceTexture!!)
+            if (e == Lifecycle.Event.ON_RESUME) { resumed = true; vm.touch() }
+            // Se apaga aquí mismo, sin esperar una recomposición.
+            if (e == Lifecycle.Event.ON_PAUSE) { resumed = false; vm.stopCamera() }
         }
         owner.lifecycle.addObserver(obs)
         onDispose { owner.lifecycle.removeObserver(obs); vm.stopCamera(); onView(null) }
+    }
+    val run = active && resumed && texture != null
+    LaunchedEffect(run, texture, retry) {
+        if (run) vm.startCamera(texture!!) else vm.stopCamera()
     }
     Box(Modifier.size(size.dp).clip(RoundedCornerShape(8.dp)).background(p.screenDim)) {
         AndroidView(
@@ -91,35 +102,41 @@ fun Viewfinder(vm: MeterViewModel, size: Int, onView: (TextureView?) -> Unit) {
                     surfaceTextureListener = object : TextureView.SurfaceTextureListener {
                         override fun onSurfaceTextureAvailable(st: SurfaceTexture, w: Int, h: Int) {
                             setTransform(Matrix().apply { setScale(1f, aspect, w / 2f, h / 2f) })
-                            vm.startCamera(st)
+                            texture = st
                         }
                         override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, w: Int, h: Int) {
                             setTransform(Matrix().apply { setScale(1f, aspect, w / 2f, h / 2f) })
                         }
-                        override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean { vm.stopCamera(); return true }
+                        override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
+                            texture = null; vm.stopCamera(); return true
+                        }
                         override fun onSurfaceTextureUpdated(st: SurfaceTexture) {}
                     }
-                    holder.value = this
                     onView(this)
                 }
             },
             update = { tv ->
-                tv.setRenderEffect(if (p.red) RenderEffect.createColorFilterEffect(ColorMatrixColorFilter(ColorMatrix(floatArrayOf(
+                val m = if (p.red) ColorMatrix(floatArrayOf(
                     0.3f, 0.59f, 0.11f, 0f, 0f,
                     0f, 0f, 0f, 0f, 0f,
                     0f, 0f, 0f, 0f, 0f,
                     0f, 0f, 0f, 1f, 0f,
-                )))) else null)
+                )) else ColorMatrix().apply { setSaturation(0f) }
+                tv.setRenderEffect(RenderEffect.createColorFilterEffect(ColorMatrixColorFilter(m)))
             },
             modifier = Modifier.fillMaxSize(),
         )
         Canvas(Modifier.fillMaxSize()) {
             val c = Offset(this.size.width / 2, this.size.height / 2)
-            val r = this.size.minDimension * 0.19f
+            // Mismo círculo que mide la cámara: fracción del lado corto del cuadro (= ancho del visor).
+            val r = this.size.width * ROI_FRACTION
             val line = if (p.red) p.screenText else androidx.compose.ui.graphics.Color.White
             drawCircle(line, r, c, style = Stroke(1.5.dp.toPx()))
             drawLine(line, Offset(c.x, c.y - r - 10), Offset(c.x, c.y + r + 10), 1.dp.toPx())
             drawLine(line, Offset(c.x - r - 10, c.y), Offset(c.x + r + 10, c.y), 1.dp.toPx())
+        }
+        if (!active) Box(Modifier.fillMaxSize().background(p.screen.copy(alpha = 0.7f)), contentAlignment = Alignment.Center) {
+            Text("■", style = mono(22, p.screenText))
         }
     }
 }
@@ -173,6 +190,8 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
             Text("${SOURCES[st.source]} · ${vm.prefs.reflectance}%", style = mono(10, p.screenDim))
             Spacer(Modifier.weight(1f))
             val status = when {
+                st.hot -> "■ caliente"
+                st.idle -> "■ pausa"
                 st.error != null -> "● sin cámara"
                 st.hold -> "■ hold"
                 else -> "● en vivo"
@@ -181,7 +200,7 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
         }
         Spacer(Modifier.height(8.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Viewfinder(vm, 132, onView)
+            Viewfinder(vm, 132, !st.idle && !st.hot && !st.hold, st.retry, onView)
             Spacer(Modifier.width(12.dp))
             Column {
                 Text(r?.let { "${it.cct.roundToInt()}" } ?: "----", style = mono(44, p.screenText, true))
@@ -191,8 +210,12 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
                 Text(if (st.calOffset == 0.0) "sin calibrar" else "calibrado", style = mono(9, p.screenDim))
             }
         }
-        val msg = st.error ?: st.warning ?: SOURCE_HINTS[st.source]
-        Text(msg, style = mono(11, if (st.error != null || st.warning != null) p.accent else p.screenDim),
+        val alert = when {
+            st.hot -> "teléfono caliente: medición en pausa hasta que se enfríe"
+            st.idle -> "en pausa para ahorrar batería · toca la pantalla"
+            else -> st.error ?: st.warning
+        }
+        Text(alert ?: SOURCE_HINTS[st.source], style = mono(11, if (alert != null) p.accent else p.screenDim),
             modifier = Modifier.padding(top = 8.dp))
         DotScale(r?.cct)
         Box(Modifier.fillMaxWidth().padding(top = 6.dp).height(1.dp).background(p.screenDim))
@@ -212,11 +235,11 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
 }
 
 @Composable
-fun KnobRow(vm: MeterViewModel) {
+fun KnobRow(vm: MeterViewModel, version: Int) {
     Row(Modifier.fillMaxWidth().padding(vertical = 12.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-        Knob(0, "cám 1", true) { vm.cycleCam(1, it) }
-        Knob(1, "cám 2", true) { vm.cycleCam(2, it) }
-        Knob(2, "fuente", true) { vm.stepSource(it) }
+        Knob(0, "fuente", true) { vm.stepSource(it) }
+        Knob(1, "intervalo ${vm.prefs.intervalMs / 1000.0} s".replace(".0 s", " s"), true) { vm.stepInterval(it) }
+        Knob(2, if (vm.prefs.tintFormat == "duv") "tinte duv" else "tinte cám", true) { vm.toggleTintFormat() }
         Knob(3, "objetivo", false) {}
     }
 }

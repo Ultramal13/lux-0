@@ -74,7 +74,7 @@ val KEYS = listOf(
     KeyDef(1, "K", "color", true), KeyDef(2, "EV", "expo", false),
     KeyDef(3, "lx", "lux", false), KeyDef(4, "Hz", "parpadeo", false),
     KeyDef(5, "A|B", "comparar", false), KeyDef(6, "▦", "mapa", false),
-    KeyDef(7, "≡", "historial", true), KeyDef(8, "⚙", "ajustes", true),
+    KeyDef(7, "≡", "sesiones", true), KeyDef(8, "⚙", "ajustes", true),
 )
 
 @Composable

@@ -3,6 +3,8 @@ package cl.lux0.ui
 import android.app.Application
 import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
+import android.os.PowerManager
+import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import cl.lux0.camera.MeterCamera
 import cl.lux0.camera.Sample
@@ -41,7 +43,18 @@ data class UiState(
     val calOffset: Double = 0.0,
     val error: String? = null,
     val version: Int = 0,
+    /** Cámara apagada por inactividad (se reanuda al tocar la pantalla). */
+    val idle: Boolean = false,
+    /** Cámara apagada porque el teléfono está caliente. */
+    val hot: Boolean = false,
+    /** La última muestra trajo lectura válida (para calibrar con datos actuales). */
+    val fresh: Boolean = false,
+    /** Sube al tocar tras un error de cámara: fuerza un reintento. */
+    val retry: Int = 0,
 )
+
+const val IDLE_MS = 90_000L
+val INTERVALS = listOf(500L, 1000L, 2000L)
 
 class MeterViewModel(app: Application) : AndroidViewModel(app) {
     val store = Store(app)
@@ -53,11 +66,39 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
         private set
 
     private val camera = MeterCamera(app, ::onSample) { msg -> _state.update { it.copy(error = msg) } }
+    @Volatile var lastTouch = SystemClock.elapsedRealtime()
+        private set
+
+    private val power = app.getSystemService(PowerManager::class.java)
+    private val thermal = PowerManager.OnThermalStatusChangedListener { status -> onThermal(status) }
+
+    init {
+        power.addThermalStatusListener(app.mainExecutor, thermal)
+        onThermal(power.currentThermalStatus)
+    }
+
+    /** Ligero: mide cada 3 s. Moderado o más: apaga la cámara hasta que se enfríe. */
+    private fun onThermal(status: Int) {
+        camera.intervalMs = if (status >= PowerManager.THERMAL_STATUS_LIGHT) maxOf(prefs.intervalMs, 3000L) else prefs.intervalMs
+        _state.update { it.copy(hot = status >= PowerManager.THERMAL_STATUS_MODERATE) }
+    }
+
+    fun touch() {
+        lastTouch = SystemClock.elapsedRealtime()
+        val st = _state.value
+        if (st.idle || st.error != null) _state.update { it.copy(idle = false, error = null, retry = it.retry + 1) }
+    }
+
+    fun checkIdle() {
+        if (!_state.value.idle && SystemClock.elapsedRealtime() - lastTouch > IDLE_MS) {
+            _state.update { it.copy(idle = true) }
+        }
+    }
 
     private fun onSample(s: Sample) {
         if (_state.value.hold) return
         _state.update { st ->
-            st.copy(reading = s.reading ?: st.reading, warning = s.warning, error = null)
+            st.copy(reading = s.reading ?: st.reading, warning = s.warning, error = null, fresh = s.reading != null)
         }
     }
 
@@ -68,23 +109,48 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun startCamera(texture: SurfaceTexture) {
-        camera.intervalMs = prefs.intervalMs
+        onThermal(power.currentThermalStatus)
         camera.calOffsetMired = prefs.calOffsetMired
         camera.start(texture, prefs.frontCamera)
     }
 
     fun stopCamera() = camera.stop()
 
-    override fun onCleared() { camera.stop() }
+    override fun onCleared() {
+        power.removeThermalStatusListener(thermal)
+        camera.release()
+    }
 
     // --- acciones ---
     fun setMode(m: Int) = _state.update { it.copy(mode = m) }
+    /** Hold congela la lectura y apaga la cámara (el visor la vuelve a encender al soltar). */
     fun toggleHold() = _state.update { it.copy(hold = !it.hold) }
     fun stepSource(d: Int) = _state.update { it.copy(source = (it.source + d).mod(SOURCES.size)) }
 
     fun cycleTheme() {
         val order = listOf("auto", "claro", "oscuro", "rojo")
         setTheme(order[(order.indexOf(_state.value.theme) + 1) % order.size])
+    }
+
+    fun stepInterval(d: Int) {
+        val i = INTERVALS.indexOf(prefs.intervalMs).coerceAtLeast(0)
+        setInterval(INTERVALS[(i + d).mod(INTERVALS.size)])
+    }
+
+    fun setInterval(ms: Long) {
+        prefs.intervalMs = ms
+        onThermal(power.currentThermalStatus)
+        bump()
+    }
+
+    fun toggleTintFormat() {
+        prefs.tintFormat = if (prefs.tintFormat == "duv") "camara" else "duv"
+        bump()
+    }
+
+    fun selectCam(slot: Int, id: String) {
+        if (slot == 1) prefs.cam1Id = id else prefs.cam2Id = id
+        bump()
     }
 
     fun setTheme(t: String) { prefs.theme = t; _state.update { it.copy(theme = t) } }
@@ -126,6 +192,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
 
     fun save(thumb: Bitmap?) {
         val r = _state.value.reading ?: return
+        if (!r.cct.isFinite() || !r.duv.isFinite()) return
         val id = System.currentTimeMillis()
         val path = thumb?.let {
             val f = File(store.thumbDir, "$id.jpg")
@@ -140,13 +207,14 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
         bump()
     }
 
+    // Sin bump(): refrescar recrearía los campos y se perdería el foco al escribir.
     fun setCapture(slot: Int, c: CaptureSettings) {
         if (slot == 1) prefs.cap1 = c else prefs.cap2 = c
-        bump()
     }
 
     /** Calibra con el K de referencia usando la lectura actual (sin la calibración previa). */
     fun calibrate(referenceK: Double): Boolean {
+        if (!_state.value.fresh) return false
         val r = _state.value.reading ?: return false
         val old = prefs.calOffsetMired
         val rawCct = 1e6 / (ColorMath.mired(r.cct) - old)

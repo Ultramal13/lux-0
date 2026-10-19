@@ -35,12 +35,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
+import kotlinx.coroutines.delay
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.lux0.ui.BlackScreen
 import cl.lux0.ui.CalibrationPanel
+import cl.lux0.ui.CameraCards
 import cl.lux0.ui.Claro
 import cl.lux0.ui.Header
 import cl.lux0.ui.HistoryPanel
@@ -77,9 +81,16 @@ fun App(vm: MeterViewModel = viewModel()) {
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }
     LaunchedEffect(Unit) { if (!granted) launcher.launch(Manifest.permission.CAMERA) }
     var textureView by remember { mutableStateOf<TextureView?>(null) }
+    LaunchedEffect(Unit) {
+        while (true) { delay(5_000); vm.checkIdle() }
+    }
 
     CompositionLocalProvider(LocalPalette provides palette) {
-        Column(Modifier.fillMaxSize().background(palette.body).safeDrawingPadding().padding(horizontal = 14.dp, vertical = 8.dp)) {
+        Column(Modifier.fillMaxSize().background(palette.body)
+            .pointerInput(Unit) {
+                awaitPointerEventScope { while (true) { awaitPointerEvent(PointerEventPass.Initial); vm.touch() } }
+            }
+            .safeDrawingPadding().padding(horizontal = 14.dp, vertical = 8.dp)) {
             Header(st.mode, st.theme, vm::cycleTheme)
             val meter = st.mode == 1 || st.mode == 9
             if (meter) {
@@ -87,7 +98,10 @@ fun App(vm: MeterViewModel = viewModel()) {
                 else Box(Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(14.dp)).background(palette.screen).padding(16.dp)) {
                     Text("lux-0 necesita la cámara para medir.\nvuelve a abrir la app para dar el permiso.", style = mono(13, palette.screenText))
                 }
-                if (st.mode == 1) Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) { KnobRow(vm) }
+                if (st.mode == 1) Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                    KnobRow(vm, st.version)
+                    CameraCards(vm, st.version)
+                }
                 else Box(Modifier.weight(1f)) { CalibrationPanel(vm, st) }
             } else if (st.mode == 7) {
                 HistoryPanel(vm, st.version, Modifier.weight(1f))
