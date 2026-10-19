@@ -1,0 +1,144 @@
+<style>
+  .phones{display:flex;gap:28px;flex-wrap:wrap;justify-content:center}
+  .dev{width:330px;border-radius:30px;padding:16px 14px 18px;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+  .dev.light{background:#e3e3df;color:#1a1a1a;border:1px solid #cfcfca}
+  .dev.dark{background:#232325;color:#e8e8e4;border:1px solid #38383b}
+  .mono{font-family:"SF Mono",ui-monospace,Menlo,monospace}
+  .hdr{display:flex;justify-content:space-between;align-items:center;font-size:12px;margin:0 4px 10px;letter-spacing:.02em}
+  .hdr b{font-weight:700;font-size:14px}
+  .scr{background:#050505;color:#f0f0f0;border-radius:14px;padding:12px;box-shadow:inset 0 0 0 3px rgba(0,0,0,.25)}
+  .scr .st{display:flex;justify-content:space-between;font-size:10px;color:#8b8b8b;margin-bottom:8px}
+  .scr .st i{font-style:normal;color:#ff5a1f}
+  .top{display:flex;gap:12px;align-items:stretch}
+  .vf{position:relative;width:104px;height:104px;border-radius:8px;flex:none;background:linear-gradient(160deg,#6b5a4a,#b9a58e 45%,#3c3833);overflow:hidden}
+  .vf:before{content:"";position:absolute;left:50%;top:50%;width:40px;height:40px;transform:translate(-50%,-50%);border:1.5px solid #fff;border-radius:50%}
+  .vf:after{content:"";position:absolute;left:50%;top:18px;bottom:18px;width:1px;background:#fff}
+  .read{flex:1;display:flex;flex-direction:column;justify-content:center}
+  .read .k{font-size:50px;font-weight:700;line-height:.95;letter-spacing:-.02em}
+  .read .k small{font-size:15px;color:#8b8b8b;font-weight:500}
+  .read .t{font-size:11px;color:#e9a6f5;margin-top:4px}
+  .dots{position:relative;height:16px;margin:12px 0 2px;background:radial-gradient(circle,#555 1.2px,transparent 1.6px) 0 50%/8px 8px repeat-x}
+  .dots.k{background-image:radial-gradient(circle,#ffb46b 1.3px,transparent 1.7px)}
+  .dots .p{position:absolute;top:0;width:3px;height:16px;border-radius:2px;background:#fff}
+  .lab{display:flex;justify-content:space-between;font-size:9px;color:#777}
+  .cams{margin-top:10px;border-top:1px dashed #333;padding-top:8px;font-size:12px}
+  .cams div{display:flex;justify-content:space-between;padding:3px 0}
+  .cams .n{display:inline-block;width:16px;height:16px;border-radius:50%;font-size:10px;text-align:center;line-height:16px;color:#000;margin-right:6px}
+  .knobs{display:flex;justify-content:space-between;margin:16px 6px 4px}
+  .kn{text-align:center;font-size:10px}
+  .kn span{display:block;width:52px;height:52px;border-radius:50%;margin:0 auto 5px;position:relative;box-shadow:0 3px 0 rgba(0,0,0,.25),inset 0 -3px 0 rgba(0,0,0,.12)}
+  .kn span:after{content:"";position:absolute;left:50%;top:6px;width:3px;height:14px;border-radius:2px;background:rgba(0,0,0,.55);transform:translateX(-50%) rotate(0deg);transform-origin:50% 20px}
+  .b1{background:#3a78d6}.g1{background:#35b36a}.w1{background:#f4f4f0}.o1{background:#ff5a1f}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;margin-top:14px}
+  .key{aspect-ratio:1/1;border-radius:9px;display:flex;flex-direction:column;justify-content:space-between;padding:6px;font-size:9.5px;box-shadow:0 3px 0 rgba(0,0,0,.22)}
+  .light .key{background:#f6f6f2;color:#1a1a1a}
+  .dark .key{background:#3a3a3d;color:#e8e8e4}
+  .key b{font-size:15px;font-weight:600}
+  .key.on{background:#1a1a1a!important;color:#fff!important}
+  .dark .key.on{background:#f4f4f0!important;color:#111!important}
+  .wide{display:flex;gap:7px;margin-top:7px}
+  .wide span{flex:1;text-align:center;padding:12px 0;border-radius:9px;font-size:11px;font-weight:700;letter-spacing:.08em;box-shadow:0 3px 0 rgba(0,0,0,.22)}
+  .light .wide .h{background:#f6f6f2}.dark .wide .h{background:#3a3a3d}
+  .wide .s{background:#ff5a1f;color:#fff}
+  .notes{max-width:760px;margin:24px auto 0}
+  .notes table{width:100%;border-collapse:collapse;font-size:13.5px}
+  .notes td{padding:7px 8px;border-bottom:1px solid rgba(128,128,128,.25);vertical-align:top}
+  .notes td:first-child{font-weight:700;white-space:nowrap}
+</style>
+
+<h2>Diseño C, versión “objeto”</h2>
+<p class="subtitle">La app se ve como un aparato de mano: pantalla negra, perillas de color, teclas cuadradas numeradas, un solo color de acento.</p>
+
+<div class="options" style="display:block">
+<div class="phones">
+  <!-- E claro -->
+  <div class="option" data-choice="e-claro" onclick="toggleSelect(this)" style="display:block;padding:12px">
+    <div class="letter">E</div><div class="content"><h3>Cuerpo claro</h3><p>Gris aluminio, teclas blancas.</p></div>
+    <div class="dev light" style="margin-top:10px">
+      <div class="hdr"><b>kelux</b><span class="mono">01 color</span></div>
+      <div class="scr mono">
+        <div class="st"><span>blanco/gris · 18%</span><i>● en vivo</i></div>
+        <div class="top">
+          <div class="vf"></div>
+          <div class="read"><div class="k">4550<small> k</small></div><div class="t">−0.005 magenta</div></div>
+        </div>
+        <div class="dots k"><span class="p" style="left:44%"></span></div>
+        <div class="lab"><span>2000</span><span>3200</span><span>5600</span><span>10000</span></div>
+        <div class="cams">
+          <div><span><span class="n" style="background:#3a78d6">1</span>canon r5</span><span>4500–4600 · g1</span></div>
+          <div><span><span class="n" style="background:#35b36a">2</span>luna ultra</span><span>4500</span></div>
+          <div style="color:#ff8a5c"><span><span class="n" style="background:#ff5a1f">◎</span>objetivo 5600</span><span>¼ ctb</span></div>
+        </div>
+      </div>
+      <div class="knobs">
+        <div class="kn"><span class="b1"></span>cám 1</div>
+        <div class="kn"><span class="g1"></span>cám 2</div>
+        <div class="kn"><span class="w1"></span>fuente</div>
+        <div class="kn"><span class="o1"></span>objetivo</div>
+      </div>
+      <div class="grid mono">
+        <div class="key on"><span>1</span><b>K</b>color</div>
+        <div class="key"><span>2</span><b>EV</b>expo</div>
+        <div class="key"><span>3</span><b>lx</b>lux</div>
+        <div class="key"><span>4</span><b>Hz</b>parpadeo</div>
+        <div class="key"><span>5</span><b>A|B</b>comparar</div>
+        <div class="key"><span>6</span><b>▦</b>mapa</div>
+        <div class="key"><span>7</span><b>≡</b>historial</div>
+        <div class="key"><span>8</span><b>⚙</b>ajustes</div>
+      </div>
+      <div class="wide mono"><span class="h">hold</span><span class="s">● guardar</span></div>
+    </div>
+  </div>
+
+  <!-- F oscuro -->
+  <div class="option" data-choice="f-oscuro" onclick="toggleSelect(this)" style="display:block;padding:12px">
+    <div class="letter">F</div><div class="content"><h3>Cuerpo oscuro</h3><p>Grafito, mejor en set con poca luz.</p></div>
+    <div class="dev dark" style="margin-top:10px">
+      <div class="hdr"><b>kelux</b><span class="mono">02 expo</span></div>
+      <div class="scr mono">
+        <div class="st"><span>reflejada · 18%</span><i>● en vivo</i></div>
+        <div class="top">
+          <div class="vf"></div>
+          <div class="read"><div class="k">f/4<small> +⅓</small></div><div class="t" style="color:#8b8b8b">ev 9.7 · 1/50 · iso 800</div></div>
+        </div>
+        <div class="dots"><span class="p" style="left:52%;background:#ff5a1f"></span></div>
+        <div class="lab"><span>−3</span><span>−1</span><span>0</span><span>+1</span><span>+3</span></div>
+        <div class="cams">
+          <div><span><span class="n" style="background:#3a78d6">1</span>r5 · 24p · 1/50</span><span>f/4 ⅓ · sin nd</span></div>
+          <div><span><span class="n" style="background:#35b36a">2</span>luna · 60p</span><span>auto iso</span></div>
+          <div style="color:#ff8a5c"><span><span class="n" style="background:#ff5a1f">!</span>parpadeo</span><span>100 hz ok</span></div>
+        </div>
+      </div>
+      <div class="knobs">
+        <div class="kn"><span class="b1"></span>iso</div>
+        <div class="kn"><span class="g1"></span>obtur.</div>
+        <div class="kn"><span class="w1"></span>f/</div>
+        <div class="kn"><span class="o1"></span>nd</div>
+      </div>
+      <div class="grid mono">
+        <div class="key"><span>1</span><b>K</b>color</div>
+        <div class="key on"><span>2</span><b>EV</b>expo</div>
+        <div class="key"><span>3</span><b>lx</b>lux</div>
+        <div class="key"><span>4</span><b>Hz</b>parpadeo</div>
+        <div class="key"><span>5</span><b>A|B</b>comparar</div>
+        <div class="key"><span>6</span><b>▦</b>mapa</div>
+        <div class="key"><span>7</span><b>≡</b>historial</div>
+        <div class="key"><span>8</span><b>⚙</b>ajustes</div>
+      </div>
+      <div class="wide mono"><span class="h">hold</span><span class="s">● guardar</span></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="notes">
+  <h3>Ideas tomadas (como principios, no como copia)</h3>
+  <table>
+    <tr><td>Perillas de color</td><td>4 perillas que se giran deslizando el dedo, con “clic” háptico. Cambian según el modo: en color = cámara 1, cámara 2, fuente, objetivo; en exposición = ISO, obturación, f/, ND. Cada color se repite en la pantalla para saber qué controla qué.</td></tr>
+    <tr><td>Teclas numeradas</td><td>Cada modo es una tecla cuadrada con número y símbolo (K, EV, lx, Hz…). Un toque y estás ahí, sin menús.</td></tr>
+    <tr><td>Un solo acento</td><td>Todo en gris/negro/blanco; el naranja solo para lo importante: guardar, objetivo, alertas.</td></tr>
+    <tr><td>Pantalla negra</td><td>Como pantalla de aparato: números grandes en monoespaciado, escalas de puntos, textos cortos en minúscula.</td></tr>
+    <tr><td>Arriba “01 color”</td><td>El número y nombre del modo activo, como en un equipo de hardware.</td></tr>
+  </table>
+  <p class="subtitle">“kelux” es solo un nombre de ejemplo (kelvin + lux).</p>
+</div>

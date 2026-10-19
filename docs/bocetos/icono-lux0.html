@@ -1,0 +1,83 @@
+<style>
+  .icons{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+  .ic{display:flex;gap:10px;justify-content:center;margin:10px 0 6px}
+  .ic svg{width:84px;height:84px;border-radius:22px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+  .home{display:flex;gap:14px;justify-content:center;margin-top:8px;font-size:11px;text-align:center;font-family:system-ui}
+  .home svg{width:46px;height:46px;border-radius:13px;display:block;margin:0 auto 4px}
+  .code{font-family:ui-monospace,Menlo,monospace;font-size:12px;text-align:center;opacity:.75}
+</style>
+
+<h2>Ícono LUX-0 — Morse resumido</h2>
+<p class="subtitle">Cada uno en oscuro, claro y noche rojo. Abajo, a tamaño real de pantalla de inicio. Haz clic en el que te guste.</p>
+
+<div class="options" style="display:block">
+<div class="icons">
+
+  <!-- 1: LUX en tres filas -->
+  <div class="option" data-choice="1-lux-filas" onclick="toggleSelect(this)" style="display:block;padding:12px">
+    <div class="letter">1</div><div class="content"><h3>LUX en 3 filas</h3><p>El Morse completo de L·U·X, chico y alineado. El último punto en naranja.</p></div>
+    <div class="ic">
+      <svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0b0b0c"/>
+        <g fill="#f2f2ee"><circle cx="27" cy="33" r="4"/><rect x="36" y="29" width="16" height="8" rx="4"/><circle cx="61" cy="33" r="4"/><circle cx="73" cy="33" r="4"/>
+        <circle cx="27" cy="50" r="4"/><circle cx="39" cy="50" r="4"/><rect x="48" y="46" width="16" height="8" rx="4"/>
+        <rect x="23" y="63" width="16" height="8" rx="4"/><circle cx="48" cy="67" r="4"/><circle cx="60" cy="67" r="4"/></g>
+        <rect x="69" y="63" width="16" height="8" rx="4" fill="#ff5a1f"/></svg>
+      <svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#e6e6e1"/>
+        <g fill="#141414"><circle cx="27" cy="33" r="4"/><rect x="36" y="29" width="16" height="8" rx="4"/><circle cx="61" cy="33" r="4"/><circle cx="73" cy="33" r="4"/>
+        <circle cx="27" cy="50" r="4"/><circle cx="39" cy="50" r="4"/><rect x="48" y="46" width="16" height="8" rx="4"/>
+        <rect x="23" y="63" width="16" height="8" rx="4"/><circle cx="48" cy="67" r="4"/><circle cx="60" cy="67" r="4"/></g>
+        <rect x="69" y="63" width="16" height="8" rx="4" fill="#ff5a1f"/></svg>
+    </div>
+    <div class="code">.-.. / ..- / -..-</div>
+  </div>
+
+  <!-- 2: cero hecho de 5 rayas -->
+  <div class="option" data-choice="2-cero-rayas" onclick="toggleSelect(this)" style="display:block;padding:12px">
+    <div class="letter">2</div><div class="content"><h3>Cero de rayas</h3><p>El 0 en Morse son 5 rayas (−−−−−): aquí forman un anillo, con un punto de luz al centro.</p></div>
+    <div class="ic">
+      <svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0b0b0c"/>
+        <g fill="none" stroke="#f2f2ee" stroke-width="7" stroke-linecap="round" transform="rotate(-90 50 50)">
+          <circle cx="50" cy="50" r="27" stroke-dasharray="22 11.93"/></g>
+        <circle cx="50" cy="50" r="6" fill="#ff5a1f"/></svg>
+      <svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#e6e6e1"/>
+        <g fill="none" stroke="#141414" stroke-width="7" stroke-linecap="round" transform="rotate(-90 50 50)">
+          <circle cx="50" cy="50" r="27" stroke-dasharray="22 11.93"/></g>
+        <circle cx="50" cy="50" r="6" fill="#ff5a1f"/></svg>
+    </div>
+    <div class="code">0 = −−−−−</div>
+  </div>
+
+  <!-- 3: punto y raya -->
+  <div class="option" data-choice="3-punto-raya" onclick="toggleSelect(this)" style="display:block;padding:12px">
+    <div class="letter">3</div><div class="content"><h3>Punto + raya</h3><p>Lo mínimo: un punto naranja (la luz) y una raya (la escala). Se lee como el inicio de la L.</p></div>
+    <div class="ic">
+      <svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0b0b0c"/>
+        <circle cx="31" cy="50" r="8" fill="#ff5a1f"/><rect x="46" y="42" width="32" height="16" rx="8" fill="#f2f2ee"/></svg>
+      <svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#e6e6e1"/>
+        <circle cx="31" cy="50" r="8" fill="#ff5a1f"/><rect x="46" y="42" width="32" height="16" rx="8" fill="#141414"/></svg>
+    </div>
+    <div class="code">·—</div>
+  </div>
+
+  <!-- 4: L en Morse vertical -->
+  <div class="option" data-choice="4-l-columna" onclick="toggleSelect(this)" style="display:block;padding:12px">
+    <div class="letter">4</div><div class="content"><h3>L en columna</h3><p>Solo la L (·−··) de arriba hacia abajo, como los LED de nivel de un aparato.</p></div>
+    <div class="ic">
+      <svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0b0b0c"/>
+        <circle cx="50" cy="24" r="5" fill="#ff5a1f"/><rect x="45" y="34" width="10" height="22" rx="5" fill="#f2f2ee"/><circle cx="50" cy="66" r="5" fill="#f2f2ee"/><circle cx="50" cy="80" r="5" fill="#f2f2ee"/></svg>
+      <svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#e6e6e1"/>
+        <circle cx="50" cy="24" r="5" fill="#ff5a1f"/><rect x="45" y="34" width="10" height="22" rx="5" fill="#141414"/><circle cx="50" cy="66" r="5" fill="#141414"/><circle cx="50" cy="80" r="5" fill="#141414"/></svg>
+    </div>
+    <div class="code">.-..</div>
+  </div>
+
+</div>
+</div>
+
+<h3 style="margin-top:22px">Modo noche rojo (mismo ícono dentro de la app)</h3>
+<div class="home">
+  <div><svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0b0000"/><g fill="#b3261e"><circle cx="27" cy="33" r="4"/><rect x="36" y="29" width="16" height="8" rx="4"/><circle cx="61" cy="33" r="4"/><circle cx="73" cy="33" r="4"/><circle cx="27" cy="50" r="4"/><circle cx="39" cy="50" r="4"/><rect x="48" y="46" width="16" height="8" rx="4"/><rect x="23" y="63" width="16" height="8" rx="4"/><circle cx="48" cy="67" r="4"/><circle cx="60" cy="67" r="4"/><rect x="69" y="63" width="16" height="8" rx="4"/></g></svg>1</div>
+  <div><svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0b0000"/><g fill="none" stroke="#b3261e" stroke-width="7" stroke-linecap="round" transform="rotate(-90 50 50)"><circle cx="50" cy="50" r="27" stroke-dasharray="22 11.93"/></g><circle cx="50" cy="50" r="6" fill="#b3261e"/></svg>2</div>
+  <div><svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0b0000"/><circle cx="31" cy="50" r="8" fill="#b3261e"/><rect x="46" y="42" width="32" height="16" rx="8" fill="#b3261e"/></svg>3</div>
+  <div><svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#0b0000"/><circle cx="50" cy="24" r="5" fill="#b3261e"/><rect x="45" y="34" width="10" height="22" rx="5" fill="#b3261e"/><circle cx="50" cy="66" r="5" fill="#b3261e"/><circle cx="50" cy="80" r="5" fill="#b3261e"/></svg>4</div>
+</div>
