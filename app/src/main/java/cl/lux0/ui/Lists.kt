@@ -166,7 +166,7 @@ private fun <T> Picker(label: String, value: T, options: List<T>, show: (T) -> S
     val p = LocalPalette.current
     var open by remember { mutableStateOf(false) }
     Row(Modifier.fillMaxWidth().padding(vertical = 3.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text(label, style = mono(12, p.text), modifier = Modifier.width(96.dp))
+        Text(label, style = mono(12, p.text), modifier = Modifier.width(100.dp))
         Box {
             Text("${show(value)}  ▾", style = mono(14, p.keyText, true),
                 modifier = Modifier.clip(RoundedCornerShape(7.dp)).background(p.key)
@@ -234,6 +234,9 @@ fun SettingsPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
         SettingRow("calibración (${if (st.calOffset == 0.0) "sin calibrar" else "calibrado"})") {
             Seg(listOf("calibrar →"), -1, { vm.setMode(9) })
         }
+        SettingRow("ayuda") {
+            Seg(listOf("qué significa cada cosa →"), -1, { vm.setMode(10) })
+        }
         Spacer(Modifier.height(12.dp))
     }
 
@@ -241,32 +244,52 @@ fun SettingsPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
 }
 
 @Composable
+private fun Hint(text: String) {
+    Text(text, style = mono(9, LocalPalette.current.text.copy(alpha = 0.65f)), modifier = Modifier.padding(start = 2.dp, bottom = 6.dp))
+}
+
+/** Cámara personalizada: solo el nombre se escribe; el resto se elige de listas con su explicación. */
+@Composable
 fun CustomCameraDialog(vm: MeterViewModel, onDone: () -> Unit) {
-        var name by remember { mutableStateOf("") }
-        var kMin by remember { mutableStateOf("2500") }
-        var kMax by remember { mutableStateOf("10000") }
-        var step by remember { mutableStateOf("100") }
-        var tint by remember { mutableStateOf(0) }
-        Dialog("cámara personalizada", onDone, "guardar", {
-            val lo = kMin.toIntOrNull(); val hi = kMax.toIntOrNull(); val s = step.toIntOrNull()
-            if (name.isNotBlank() && lo != null && hi != null && s != null && lo < hi && s > 0) {
-                val parts = name.trim().split(" ", limit = 2)
-                vm.addCustomCamera(CameraProfile(
-                    "custom-" + System.currentTimeMillis(), parts[0], parts.getOrElse(1) { "" }, lo, hi, s,
-                    if (tint == 1) TintSystem.CANON_GM9 else TintSystem.NONE, true, "personalizada",
-                ))
-                onDone()
-            }
-        }) {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Field(name, { name = it }, 240, hint = "marca modelo")
-                Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Field(kMin, { kMin = it }, 70, true, "mín k"); Field(kMax, { kMax = it }, 70, true, "máx k"); Field(step, { step = it }, 60, true, "paso")
-                }
-                Seg(listOf("sin tinte", "tinte g/m ±9"), tint, { tint = it })
-            }
+    var name by remember { mutableStateOf("") }
+    var kMin by remember { mutableStateOf(2500) }
+    var kMax by remember { mutableStateOf(10000) }
+    var step by remember { mutableStateOf(100) }
+    var tint by remember { mutableStateOf(false) }
+    var isoMax by remember { mutableStateOf<Int?>(null) }
+    var err by remember { mutableStateOf<String?>(null) }
+    Dialog("cámara personalizada", onDone, "guardar", {
+        err = when {
+            name.isBlank() -> "escribe marca y modelo"
+            kMin >= kMax -> "el k mínimo debe ser menor que el máximo"
+            else -> null
+        }
+        if (err == null) {
+            val parts = name.trim().split(" ", limit = 2)
+            vm.addCustomCamera(CameraProfile(
+                "custom-" + System.currentTimeMillis(), parts[0], parts.getOrElse(1) { "" }, kMin, kMax, step,
+                if (tint) TintSystem.CANON_GM9 else TintSystem.NONE, true, "personalizada", isoMax,
+            ))
+            onDone()
+        }
+    }) {
+        Column(Modifier.verticalScroll(rememberScrollState())) {
+            Field(name, { name = it }, 240, hint = "marca modelo (ej. sony fx3)")
+            Hint("el nombre que verás en el menú de cámaras")
+            Picker("k mínimo", kMin, listOf(2000, 2300, 2500, 2800, 3000, 3200), { "$it k" }) { kMin = it }
+            Hint("la temperatura más cálida que acepta la cámara")
+            Picker("k máximo", kMax, listOf(7500, 8000, 9000, 9900, 10000, 12000, 15000), { "$it k" }) { kMax = it }
+            Hint("la temperatura más fría que acepta la cámara")
+            Picker("paso", step, listOf(10, 50, 100, 200), { "$it k" }) { step = it }
+            Hint("de cuánto en cuánto cambia el kelvin en la cámara; la recomendación se redondea a este paso")
+            Picker("tinte", tint, listOf(false, true), { if (it) "g/m ±9" else "no tiene" }) { tint = it }
+            Hint("si la cámara permite corregir verde/magenta (como el wb shift de canon); si no, solo se muestra ⚠")
+            Picker("iso máximo", isoMax, listOf<Int?>(null) + CaptureOptions.ISO.filter { it >= 3200 }, { it?.toString() ?: "no sé" }) { isoMax = it }
+            Hint("limita la lista de iso de esta cámara")
+            err?.let { Text(it, style = mono(11, LocalPalette.current.accent)) }
         }
     }
+}
 
 /** Tarjetas Cámara 1 y 2 de la pantalla de medición: modelo (menú) y ajustes de captura. */
 @Composable

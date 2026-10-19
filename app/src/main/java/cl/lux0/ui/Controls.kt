@@ -84,7 +84,7 @@ fun KeyGrid(mode: Int, onKey: (Int) -> Unit) {
         KEYS.chunked(4).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 row.forEach { k ->
-                    val on = k.n == mode || (k.n == 8 && mode == 9)
+                    val on = k.n == mode || (k.n == 8 && (mode == 9 || mode == 10))
                     Column(
                         Modifier.weight(1f).aspectRatio(1.25f).shadow(2.dp, RoundedCornerShape(9.dp))
                             .clip(RoundedCornerShape(9.dp)).background(if (on) p.keyOn else p.key)

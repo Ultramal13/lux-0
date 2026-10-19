@@ -53,13 +53,16 @@ import cl.lux0.color.Reading
 import java.util.Locale
 import kotlin.math.roundToInt
 
-val MODE_NAMES = mapOf(1 to "color", 7 to "sesiones", 8 to "ajustes", 9 to "calibrar")
+val MODE_NAMES = mapOf(1 to "color", 7 to "sesiones", 8 to "ajustes", 9 to "calibrar", 10 to "ayuda")
 
 @Composable
-fun Header(mode: Int, theme: String, onTheme: () -> Unit) {
+fun Header(mode: Int, theme: String, onTheme: () -> Unit, onHelp: () -> Unit = {}) {
     val p = LocalPalette.current
     Row(Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         Text("lux-0", style = mono(16, p.text, true))
+        Text("?", style = mono(13, p.keyText, true),
+            modifier = Modifier.padding(start = 10.dp).clip(RoundedCornerShape(7.dp)).background(p.key)
+                .clickable(onClick = onHelp).padding(horizontal = 9.dp, vertical = 4.dp))
         Spacer(Modifier.weight(1f))
         Text(String.format(Locale.US, "%02d %s", mode, MODE_NAMES[mode] ?: ""), style = mono(13, p.text))
         Text(

@@ -50,6 +50,7 @@ import cl.lux0.ui.CalibrationPanel
 import cl.lux0.ui.CameraCards
 import cl.lux0.ui.Claro
 import cl.lux0.ui.Header
+import cl.lux0.ui.HelpPanel
 import cl.lux0.ui.HistoryPanel
 import cl.lux0.ui.KeyGrid
 import cl.lux0.ui.SourceRow
@@ -95,7 +96,7 @@ fun App(vm: MeterViewModel = viewModel()) {
                 awaitPointerEventScope { while (true) { awaitPointerEvent(PointerEventPass.Initial); vm.touch() } }
             }
             .safeDrawingPadding().padding(horizontal = 14.dp, vertical = 8.dp)) {
-            Header(st.mode, st.theme, vm::cycleTheme)
+            Header(st.mode, st.theme, vm::cycleTheme) { vm.setMode(10) }
             val meter = st.mode == 1 || st.mode == 9
             if (meter) {
                 if (granted) BlackScreen(vm, st) { textureView = it }
@@ -107,6 +108,8 @@ fun App(vm: MeterViewModel = viewModel()) {
                     CameraCards(vm, st.version)
                 }
                 else Box(Modifier.weight(1f)) { CalibrationPanel(vm, st) }
+            } else if (st.mode == 10) {
+                HelpPanel(Modifier.weight(1f))
             } else if (st.mode == 7) {
                 HistoryPanel(vm, st.version, Modifier.weight(1f))
             } else {

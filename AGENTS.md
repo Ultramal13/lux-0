@@ -57,7 +57,7 @@ Corre las pruebas y compila antes de cada commit. Haz commits pequeños, con men
 - `camera/MeterCamera.kt`: Camera2 con un solo hilo propio. Usa preview + YUV con AWB apagado, matriz identidad y curva lineal.
 - `camera/YuvRoi.kt`: promedio RGB del círculo (`ROI_FRACTION`, el mismo radio que dibuja el visor).
 - `data/`: modelos, `Store` (JSON en filesDir), `Prefs`, CSV y `CaptureOptions`.
-- `ui/`: tema y paletas (claro/oscuro/noche rojo), teclas, pantalla de medición, sesiones, ajustes, calibración y `MeterViewModel` (estado, protección térmica, pausa y demo).
+- `ui/`: tema y paletas (claro/oscuro/noche rojo), teclas, pantalla de medición, sesiones, ajustes, calibración, ayuda (`Help.kt`, se abre con "?" o desde Ajustes) y `MeterViewModel` (estado, protección térmica, pausa y demo). Si agregas un parámetro nuevo, explícalo también en `Help.kt`.
 
 ## Estado (2026-10-19)
 - **Etapa 1 lista:** color, cámaras 1/2 con captura, sesiones (miniatura, comentario, CSV), temas, calibración, protección térmica y modo demo.
