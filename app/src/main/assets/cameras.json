@@ -2,7 +2,7 @@
   {"id": "canon-r5", "brand": "Canon", "model": "R5", "kMin": 2500, "kMax": 10000, "kStep": 100,
    "tint": "CANON_GM9", "verified": true, "isoMax": 51200,
    "source": "Canon EOS R5 manual: temperatura de color 2500–10000 K en pasos de 100 K; corrección de balance (WB Shift) ±9 niveles; ISO 100–51200 nativo"},
-  {"id": "insta360-luna-ultra", "brand": "Insta360", "model": "Luna Ultra", "kMin": 2000, "kMax": 10000, "kStep": 100,
-   "tint": "NONE", "verified": false, "isoMax": 6400,
-   "source": "Manual v1.1: K fijo o AWB, EV, ISO y obturación en Modo Pro; sin tinte. Rango 2000–10000 K e ISO 100–6400 confirmados en el menú de la cámara; paso de K por confirmar"}
+  {"id": "insta360-luna-ultra", "brand": "Insta360", "model": "Luna Ultra", "kMin": 2000, "kMax": 10000, "kStep": 200,
+   "tint": "NONE", "verified": true, "isoMax": 6400,
+   "source": "Manual v1.1: K fijo o AWB, EV, ISO y obturación en Modo Pro; sin tinte. Rango 2000–10000 K en pasos de 200 K e ISO 100–6400, confirmados en el menú de la cámara"}
 ]
