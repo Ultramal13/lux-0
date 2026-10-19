@@ -1,0 +1,79 @@
+package cl.lux0.data
+
+import org.json.JSONObject
+
+data class CaptureSettings(
+    val iso: Int = 800,
+    val fps: Double = 24.0,
+    val shutter: String = "1/50",
+    val fStop: Double? = null,
+    val nd: String = "",
+) {
+    fun toJson(): JSONObject = JSONObject().put("iso", iso).put("fps", fps).put("shutter", shutter)
+        .put("fStop", fStop ?: JSONObject.NULL).put("nd", nd)
+
+    val label: String
+        get() = buildString {
+            append(fpsLabel(fps)).append("p · ").append(shutter).append(" · iso ").append(iso)
+            fStop?.let { append(" · f/").append(it) }
+            if (nd.isNotBlank()) append(" · ").append(nd)
+        }
+
+    companion object {
+        fun fromJson(o: JSONObject?) = if (o == null) CaptureSettings() else CaptureSettings(
+            iso = o.optInt("iso", 800),
+            fps = o.optDouble("fps", 24.0),
+            shutter = o.optString("shutter", "1/50"),
+            fStop = if (o.isNull("fStop")) null else o.optDouble("fStop"),
+            nd = o.optString("nd", ""),
+        )
+    }
+}
+
+fun fpsLabel(fps: Double): String =
+    if (fps == Math.floor(fps)) fps.toInt().toString() else fps.toString()
+
+data class Session(val id: Long, val name: String, val created: Long, val note: String = "") {
+    fun toJson(): JSONObject = JSONObject().put("id", id).put("name", name).put("created", created).put("note", note)
+
+    companion object {
+        fun fromJson(o: JSONObject) =
+            Session(o.getLong("id"), o.getString("name"), o.getLong("created"), o.optString("note", ""))
+    }
+}
+
+data class Measurement(
+    val id: Long,
+    val sessionId: Long,
+    val time: Long,
+    val source: String,
+    val cct: Double,
+    val duv: Double,
+    val cam1: String,
+    val rec1: String,
+    val cam2: String,
+    val rec2: String,
+    val cap1: CaptureSettings,
+    val cap2: CaptureSettings,
+    val thumbPath: String?,
+    val comment: String,
+) {
+    fun toJson(): JSONObject = JSONObject().put("id", id).put("sessionId", sessionId).put("time", time)
+        .put("source", source).put("cct", cct).put("duv", duv)
+        .put("cam1", cam1).put("rec1", rec1).put("cam2", cam2).put("rec2", rec2)
+        .put("cap1", cap1.toJson()).put("cap2", cap2.toJson())
+        .put("thumbPath", thumbPath ?: JSONObject.NULL).put("comment", comment)
+
+    companion object {
+        fun fromJson(o: JSONObject) = Measurement(
+            id = o.getLong("id"), sessionId = o.getLong("sessionId"), time = o.getLong("time"),
+            source = o.optString("source"), cct = o.getDouble("cct"), duv = o.getDouble("duv"),
+            cam1 = o.optString("cam1"), rec1 = o.optString("rec1"),
+            cam2 = o.optString("cam2"), rec2 = o.optString("rec2"),
+            cap1 = CaptureSettings.fromJson(o.optJSONObject("cap1")),
+            cap2 = CaptureSettings.fromJson(o.optJSONObject("cap2")),
+            thumbPath = if (o.isNull("thumbPath")) null else o.optString("thumbPath"),
+            comment = o.optString("comment", ""),
+        )
+    }
+}
