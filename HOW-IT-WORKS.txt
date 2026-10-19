@@ -1,0 +1,107 @@
+LUX-0 · How it works
+====================
+
+What it is
+----------
+LUX-0 is an Android app that uses the phone's camera as a light sensor.
+It does not take pictures. It measures the color temperature (Kelvin) and
+the green/magenta tint of the light, then translates the result into the
+values you set by hand on external cameras (for example a Canon R5 or an
+Insta360 Luna Ultra).
+
+
+Technology
+----------
+- Platform: native Android (Android 12 or later).
+- Language: Kotlin.
+- UI:       Jetpack Compose, with an original "handheld device" design.
+- Camera:   Camera2, Android's low-level camera API. It is used instead of
+            CameraX because the app needs control over the camera's color
+            processing.
+- Build:    Gradle 9 + Android Gradle Plugin 9, JDK 21, Android SDK 37.
+- Data:     everything stays on the phone (a JSON file plus settings). No
+            cloud, no accounts, no internet.
+- Tests:    JUnit for the math. The UI is also checked on the Android
+            emulator in demo mode.
+- Libraries: only official Android/Google ones (AndroidX, Compose). No
+            third-party libraries or external services.
+
+
+How it measures
+---------------
+1. Small image. The camera delivers a small image (640x480, YUV) in the same
+   lightweight mode the camera app uses for its viewfinder, at a low frame
+   rate.
+
+2. No phone "makeup". The color processing the phone normally applies is
+   turned off: auto white balance off, an identity color matrix with unit
+   gains, and a linear tone curve. The numbers are what the sensor sees, not
+   what the phone thinks things should look like.
+
+3. Measuring area. The app averages the color of a center circle. You point
+   it at a white sheet or gray card, or you put a white diffuser over the lens
+   and point it at the light. The app warns if the area is clipped, too dark,
+   or not neutral.
+
+4. From sensor color to real color. Every sensor ships with factory color
+   calibration matrices, which Android exposes (the same ones Adobe's DNG
+   format uses). They convert the sensor RGB to the standard CIE 1931 color
+   space (xy coordinates), interpolating between the two matrices by
+   temperature, as DNG does.
+
+5. Kelvin and tint. From xy the app computes:
+   - the correlated color temperature (CCT): the closest point on the
+     black-body curve (Planckian locus), using the Krystek (1985)
+     approximation in CIE 1960 uv
+   - the Duv: the distance to that curve. Positive means green, negative
+     means magenta.
+
+6. Translation to each camera. A small database stores each model's Kelvin
+   range, step size, and tint system (for example Canon's +/-9 G/M WB
+   Shift). The app rounds to those steps and gives a suggested value plus a
+   range.
+
+7. Optional calibration. You compare against a known reference: shoot a
+   white sheet in RAW with the R5, read the Kelvin with the white balance
+   eyedropper in Lightroom or DPP, and enter it in the app. The app stores
+   the correction (in mired).
+
+
+Battery and heat care
+---------------------
+- Only one frame per second is analyzed (configurable).
+- If Android reports the phone is warming up, the app measures more slowly.
+  At a moderate level it turns the camera off until the phone cools down.
+- Automatic pause after 90 s without touching the screen.
+- "Hold" freezes the reading and turns the camera off.
+- An early version captured full-resolution RAW every second and heated the
+  phone. It was replaced by the lightweight method described above.
+
+
+Expected accuracy (estimated, still to be validated)
+----------------------------------------------------
+- White sheet or diffuser, calibrated:   +/-150-300 K.
+- "Scene" mode (no reference):           +/-500 K or more.
+- The Canon tint value is approximate, because Canon does not publish the
+  exact equivalence between its G/M steps and Duv.
+
+
+Is any of this secret?
+----------------------
+No. Everything is based on public standards:
+- CIE colorimetry (1931 and 1960)
+- the Planckian locus and the Krystek approximation
+- the DNG color model
+- Google's documented Camera2 API
+
+What is specific to LUX-0 is how the pieces fit together: the UI, the
+per-camera translation, the sessions, and the heat safeguards.
+
+Stage 1 features (done):
+  color measurement, cameras 1 and 2 with capture settings, sessions with
+  thumbnail, comment and CSV export, light/dark/red-night themes,
+  calibration, built-in help.
+
+Stage 2 features (pending):
+  exposure, lux, flicker, compare lights -> gel, mixed-light map, target
+  temperature.

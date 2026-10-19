@@ -2,6 +2,8 @@
   <img src="docs/banner.svg" alt="LUX-0 — medidor de luz para foto y video" width="100%">
 </p>
 
+<p align="center"><b>Español</b> · <a href="README.en.md">English</a></p>
+
 # LUX-0
 
 **Medidor de luz para foto y video, para Android.** Usa la cámara del celular como sensor: mide la **temperatura de color (Kelvin)** y el **tinte verde/magenta** de la luz, y te dice qué poner en el balance de blancos manual de **tus cámaras** (por ejemplo una Canon R5 o una Insta360 Luna Ultra).
