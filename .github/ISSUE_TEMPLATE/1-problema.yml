@@ -1,0 +1,60 @@
+name: "🐞 Problema / Problem"
+description: "Algo no funciona, se cierra o se ve mal · Something doesn't work, crashes or looks wrong"
+title: "[problema] "
+labels: ["beta", "bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Gracias por probar LUX-0. Thanks for testing LUX-0.
+        Puedes escribir en español o inglés. You can write in Spanish or English.
+  - type: input
+    id: telefono
+    attributes:
+      label: "Modelo del teléfono y versión de Android · Phone model and Android version"
+      placeholder: "ej./e.g. Samsung Galaxy S24, Android 15"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: "Versión de LUX-0 · LUX-0 version"
+      placeholder: "0.2.0-beta"
+    validations:
+      required: true
+  - type: dropdown
+    id: herramienta
+    attributes:
+      label: "¿Dónde pasó? · Where did it happen?"
+      options:
+        - "1 · color"
+        - "2 · exposición / exposure"
+        - "3 · lux"
+        - "4 · parpadeo / flicker"
+        - "5 · comparar / compare"
+        - "6 · mapa / map"
+        - "sesiones / sessions"
+        - "ajustes, calibración / settings, calibration"
+        - "otro / other"
+    validations:
+      required: true
+  - type: textarea
+    id: que-paso
+    attributes:
+      label: "¿Qué pasó y qué esperabas? · What happened and what did you expect?"
+      description: "Pasos para repetirlo, si puedes · Steps to reproduce, if you can"
+    validations:
+      required: true
+  - type: textarea
+    id: capturas
+    attributes:
+      label: "Capturas de pantalla · Screenshots"
+      description: "Arrástralas aquí · Drag them here"
+  - type: dropdown
+    id: calor
+    attributes:
+      label: "¿El teléfono se calentó? · Did the phone get warm?"
+      options:
+        - "no"
+        - "un poco / a little"
+        - "bastante / quite a lot"

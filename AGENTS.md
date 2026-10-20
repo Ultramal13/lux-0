@@ -53,6 +53,13 @@ ADB=$ANDROID_HOME/platform-tools/adb
   ```
   En el emulador la app entra sola en **modo demo** (lecturas simuladas, marcadas "● demo"). En un teléfono real nunca.
 
+## Versiones de distribución (beta)
+- `./gradlew :app:assembleRelease` genera `app/build/outputs/apk/release/app-release.apk`.
+- La firma se lee de `~/.lux0/keystore.properties` y `~/.lux0/lux0-release.jks`. Están fuera del repo: **nunca subirlos**. Si faltan, el release sale sin firmar.
+- Antes de cada beta, subir `versionCode` y `versionName` en `app/build.gradle.kts`.
+- Publicar con `gh release create vX.Y.Z-beta <apk> --prerelease`, con el APK renombrado a `LUX-0-vX.Y.Z-beta.apk`.
+- Los betatesters reportan con los formularios de `.github/ISSUE_TEMPLATE/`.
+
 ## Comandos
 ```bash
 ./gradlew :app:testDebugUnitTest      # pruebas (JUnit, 19 hoy)

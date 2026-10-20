@@ -1,0 +1,40 @@
+name: "📏 Medición o sugerencia / Measurement or suggestion"
+description: "Compara LUX-0 con tu cámara o fotómetro, o propone una mejora · Compare LUX-0 with your camera or meter, or suggest an improvement"
+title: "[medición] "
+labels: ["beta", "medicion"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Las comparaciones reales nos ayudan a validar la precisión. Real comparisons help us validate accuracy.
+  - type: input
+    id: telefono
+    attributes:
+      label: "Modelo del teléfono · Phone model"
+    validations:
+      required: true
+  - type: input
+    id: luz
+    attributes:
+      label: "Tipo de luz · Kind of light"
+      placeholder: "ej./e.g. sol de mediodía, ampolleta cálida, panel LED 5600 K, fluorescente"
+  - type: input
+    id: lux0
+    attributes:
+      label: "Lo que marcó LUX-0 · What LUX-0 showed"
+      placeholder: "ej./e.g. 4850 k, -0.004 · o/or f/4 · o/or 100 hz"
+  - type: input
+    id: referencia
+    attributes:
+      label: "Tu referencia · Your reference"
+      placeholder: "ej./e.g. Capture One con hoja blanca: 5100 k · fotómetro Sekonic: f/4.5"
+  - type: dropdown
+    id: calibrado
+    attributes:
+      label: "¿LUX-0 estaba calibrada? · Was LUX-0 calibrated?"
+      options: ["no", "sí / yes"]
+  - type: textarea
+    id: comentarios
+    attributes:
+      label: "Comentarios o sugerencia · Comments or suggestion"
+      description: "Incluye datos de tu cámara si quieres que la agreguemos (rango de K, paso, ISO máximo) · Include your camera's data if you want it added (K range, step, max ISO)"

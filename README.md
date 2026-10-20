@@ -6,100 +6,134 @@
 
 # LUX-0
 
-**Medidor de luz para foto y video, para Android.** Usa la cámara del celular como sensor: mide la **temperatura de color (Kelvin)** y el **tinte verde/magenta** de la luz, y te dice qué poner en el balance de blancos manual de **tus cámaras** (por ejemplo una Canon R5 o una Insta360 Luna Ultra).
+**Medidor de luz para foto y video, para Android.** Usa la cámara y el sensor de luz del celular para medir **temperatura de color (Kelvin), tinte, exposición, lux y parpadeo**. Te dice qué poner en **tus cámaras**: balance de blancos, diafragma y obturación segura.
 
-No toma fotos. Es un instrumento de medición.
+> **Beta pública v0.2.0 — buscamos betatesters.** 🧪
+> Todas las herramientas funcionan y están probadas en un Samsung Galaxy S26 Ultra. Necesitamos probarla en **más teléfonos y más luces** para validar la precisión.
+> La app está en **español e inglés** y usa el idioma del teléfono.
 
-> **Estado: en desarrollo — etapas 1 y 2 implementadas, en pruebas.**
-> Mide y recomienda valores, pero falta validar la precisión en terreno y el consumo de batería y temperatura en uso prolongado. Todavía no hay versión publicada.
->
-> La app está en **español e inglés**: usa el idioma del teléfono.
+---
+
+## Instalar la beta
+
+1. Entra a **[Releases](https://github.com/Ultramal13/lux-0/releases)** y descarga `LUX-0-v0.2.0-beta.apk`.
+2. Ábrelo en tu Android. Si el teléfono lo pide, permite **"instalar apps desconocidas"** para tu navegador o administrador de archivos.
+3. Abre LUX-0 y acepta el permiso de **cámara**, que es el único que pide.
+
+**Requisitos:**
+- Android 12 o superior.
+- Una cámara que permita **controlar el color manualmente**. La mayoría de los teléfonos de gama media y alta lo permiten; si el tuyo no, la app lo avisa en pantalla.
+
+**Probado en:** Samsung Galaxy S26 Ultra (Android 17). ¡Cuéntanos cómo funciona en el tuyo!
+
+---
+
+## Cómo ayudar como betatester
+
+- **Úsala en rodajes o sesiones reales,** con distintas luces: día, nublado, ampolletas cálidas, LED, fluorescentes y luces mezcladas.
+- **Compárala con tu cámara:** el balance que te da tu cámara o tu programa de revelado (Capture One, Lightroom, DPP) frente al que da LUX-0. Si tienes un fotómetro o colorímetro, mejor aún.
+- **Reporta lo que encuentres** en **[Issues](https://github.com/Ultramal13/lux-0/issues/new/choose)**. Hay dos formularios: *"problema"* y *"medición / sugerencia"*. Incluye siempre:
+  - el **modelo de tu teléfono** y la versión de Android
+  - qué estabas midiendo y con qué luz
+  - una **captura de pantalla**, si puedes
+  - en mediciones: el valor de LUX-0 y el de tu referencia
+
+---
+
+## Herramientas
+
+| Tecla | Herramienta | Qué hace |
+|---|---|---|
+| **1 · K** | **Color** | Kelvin y tinte en vivo. Apuntas el círculo a una hoja blanca o tarjeta gris, o usas un difusor. Te da el valor exacto para **Cámara 1 y Cámara 2**, ya redondeado a los pasos de cada una (por ejemplo, el WB Shift G/M de Canon). |
+| **2 · EV** | **Exposición** | El EV de la escena y el **diafragma sugerido** para cada cámara según su ISO, obturación, ND y EV. Si ya fijaste un f/, te dice cuántos pasos sobran o faltan. |
+| **3 · lx** | **Lux** | Lux y pie-candela con el sensor de luz del frente del teléfono. |
+| **4 · Hz** | **Parpadeo** | Detecta luces que pulsan (100/120 Hz) y te dice qué **obturación es segura** para los fps de cada cámara, como velocidad y como ángulo. |
+| **5 · A\|B** | **Comparar** | Mide dos luces y sugiere el **gel** para igualarlas (CTO/CTB y ≈ verde/magenta) o el valor en K para un panel. |
+| **6 · ▦** | **Mapa** | Una grilla sobre el visor muestra qué zonas reciben luz más cálida (naranja) o más fría (azul). |
+
+**Además:**
+- **Sesiones por rodaje:** cada medición se guarda con hora, miniatura, comentario y ajustes de cámara. Se exportan a **CSV** para el colorista.
+- **Base de cámaras:** Canon R5 e Insta360 Luna Ultra verificadas, más **cámaras personalizadas**. Los ajustes de captura (ISO, fps, obturación, f/, ND y EV) se eligen de listas.
+- **Temperatura objetivo** con el gel para llegar a ella.
+- **Calibración** contra tu propia cámara (foto RAW de una hoja blanca), más ajustes finos de exposición y lux.
+- **Temas** claro, oscuro y **noche rojo** para sets a oscuras.
+- **Ayuda integrada** (botón **?**) que explica cada parámetro.
+- **Cuidado del teléfono:**
+  - imagen de análisis pequeña y pocos cuadros por segundo
+  - protección térmica
+  - pausa automática tras 90 s sin uso
+  - "hold" apaga la cámara
+
+---
+
+## Privacidad
+
+- **No usa internet.** Ni siquiera pide ese permiso. Sin cuentas, publicidad ni análisis de uso.
+- **Tus datos se quedan en tu teléfono.** Sesiones, miniaturas y ajustes no se suben al respaldo en la nube ni viajan al cambiar de teléfono.
+- **El CSV sale solo cuando tú lo compartes,** con el botón "exportar csv".
+
+## Limitaciones conocidas
+
+**Precisión estimada,** en validación justamente con esta beta:
+
+| Medición | Precisión |
+|---|---|
+| Color con hoja o difusor, calibrado | ±150–300 K |
+| Color en modo escena | ±500 K o más |
+| Exposición | ±⅓–½ paso |
+
+**Otras limitaciones:**
+- El **tinte para Canon** es aproximado: Canon no publica la equivalencia exacta.
+- **Mapa y modo escena** dependen del color de las superficies: son una guía.
+- **Lux** depende del sensor de cada teléfono: úsalo para comparar.
+- **Parpadeo** necesita que el teléfono permita exposición manual e informe su tiempo de lectura. Si no, la app lo avisa.
+- Solo **R5 y Luna Ultra** vienen verificadas. Para otras cámaras usa "+ cámara personalizada", y si nos envías sus datos (rango de K, paso e ISO máximo) las agregamos.
 
 ---
 
 ## Capturas
 
-| Medición (teléfono real) | Medición (emulador, modo demo) | Ajustes de captura | Ayuda |
-|---|---|---|---|
-| <img src="docs/capturas/medir.png" width="200"> | <img src="docs/capturas/emu-demo.png" width="200"> | <img src="docs/capturas/emu-captura.png" width="200"> | <img src="docs/capturas/emu-ayuda.png" width="200"> |
+| Color | Exposición | Parpadeo |
+|---|---|---|
+| <img src="docs/capturas/emu-visor-fijo.png" width="230"> | <img src="docs/capturas/emu-expo.png" width="230"> | <img src="docs/capturas/emu-parpadeo.png" width="230"> |
 
----
+| Comparar | Mapa | Lux (teléfono real) |
+|---|---|---|
+| <img src="docs/capturas/emu-comparar.png" width="230"> | <img src="docs/capturas/emu-mapa.png" width="230"> | <img src="docs/capturas/telefono/prueba-etapa2.png" width="230"> |
 
-## Qué hace (etapa 1)
-
-- **Kelvin y tinte en vivo:** se apunta el círculo a una hoja blanca o una tarjeta gris, o se mide la luz a través de un difusor.
-- **Recomendación por cámara (Cámara 1 y Cámara 2).** Por ejemplo, `4400–5000 · 4700 · ≈g2`:
-  - rango razonable
-  - valor redondeado a los pasos de esa cámara
-  - corrección de tinte en sus unidades (WB Shift G/M de Canon)
-- **Base de cámaras:**
-  - Canon R5 e Insta360 Luna Ultra, con datos verificados.
-  - Cámaras personalizadas: rango de K, paso, tinte e ISO máximo.
-- **Ajustes de captura por cámara,** elegidos de listas: ISO, fps, obturación, f/, ND y compensación EV.
-- **Sesiones por rodaje:** cada medición guarda hora, miniatura, comentario y ajustes. Se exporta a **CSV** para el colorista.
-- **Calibración** contra una referencia: una foto RAW de una hoja blanca con tu cámara.
-- **Temas:** claro, oscuro y **noche rojo**, este último para sets a oscuras.
-- **Cuidado del teléfono:**
-  - protección térmica
-  - pausa automática tras 90 s sin uso
-  - imagen de análisis pequeña y pocos cuadros por segundo
-- **Ayuda integrada,** que explica cada parámetro.
-
-## Etapa 2 (implementada, en pruebas)
-
-- **Exposición:** EV de la escena y diafragma sugerido, o pasos de diferencia, para cada cámara según su ISO, obturación, ND y EV.
-- **Lux:** con el sensor de luz frontal del teléfono.
-- **Parpadeo:** detecta 100/120 Hz con las bandas del rolling shutter (1/2000 s) y dice qué obturación es segura para los fps de cada cámara.
-- **Comparar dos luces:** diferencia en mired y tinte, más el gel sugerido (CTO/CTB y ≈ Plus/Minus Green) o el valor para un panel.
-- **Mapa de luces mezcladas:** grilla sobre el visor, en naranja las zonas más cálidas y en azul las más frías.
-- **Temperatura objetivo:** con el gel para llegar a ella.
+<sub>Las capturas del emulador muestran lecturas simuladas (modo demo) y salen en inglés porque el emulador está en ese idioma.</sub>
 
 ---
 
 ## Cómo mide
 
-1. Toma una imagen pequeña (640×480) del visor de la cámara, a pocos cuadros por segundo.
-2. **Apaga el procesamiento de color del teléfono:**
-   - balance de blancos automático apagado
-   - matriz de color identidad
-   - curva de tono lineal
-
-   Así los valores son los del sensor.
-3. Promedia el color del círculo central y avisa si está quemado, muy oscuro o no parece neutro.
-4. Convierte el RGB del sensor a **CIE 1931 xy** con las matrices de calibración de fábrica del propio sensor, con el mismo método que el formato DNG.
-5. Calcula la **CCT** (punto más cercano del locus de Planck, aproximación de Krystek 1985 en CIE 1960 uv) y el **Duv**.
-6. Traduce el resultado a cada cámara según su rango, sus pasos y su sistema de tinte.
+1. Toma una imagen pequeña (640×480) en el modo liviano del visor de la cámara y **apaga el procesamiento de color del teléfono**: balance automático apagado, matriz de color neutra y curva lineal.
+2. Promedia el color del círculo y lo convierte a **CIE 1931 xy** con las matrices de calibración de fábrica del propio sensor, con el mismo método que el formato DNG.
+3. Calcula la **CCT** (locus de Planck, aproximación de Krystek) y el **Duv**, y traduce el resultado a cada cámara.
+4. Para exposición usa los ajustes que elige el teléfono para el círculo (EV100). Para parpadeo, las bandas del rolling shutter a 1/2000 s.
 
 Todo se basa en estándares públicos de colorimetría. Más detalle en [`COMO-FUNCIONA.txt`](COMO-FUNCIONA.txt).
-
-**Precisión esperada** (estimada, en validación):
-
-| Modo | Precisión |
-|---|---|
-| Hoja o difusor, calibrado | ±150–300 K |
-| Modo escena | ±500 K o más |
 
 ## Tecnología
 
 - Android nativo · **Kotlin** · **Jetpack Compose** · **Camera2**
-- Gradle 9 + Android Gradle Plugin 9 · JDK 21 · compileSdk 37 · minSdk 31 (Android 12)
-- Sin librerías de terceros ni servicios externos. Los datos se guardan solo en el teléfono.
-- Pruebas unitarias con JUnit para la colorimetría, la lectura de la imagen, el CSV y las listas de captura.
+- Sin librerías de terceros ni servicios externos.
+- 36 pruebas unitarias: colorimetría, exposición, geles, parpadeo, mapa, lectura de imagen, CSV y listas de captura.
 
 ## Compilar
 
 ```bash
 export JAVA_HOME=/ruta/a/jdk-21
 ./gradlew :app:testDebugUnitTest   # pruebas
-./gradlew :app:assembleDebug       # APK en app/build/outputs/apk/debug/
+./gradlew :app:assembleDebug       # APK de desarrollo en app/build/outputs/apk/debug/
 ```
 
-Crea un `local.properties` con `sdk.dir=/ruta/al/android-sdk`. En el emulador de Android la app entra en **modo demo**, con lecturas simuladas y marcadas como tales, porque la cámara virtual no permite medir color.
+Crea un `local.properties` con `sdk.dir=/ruta/al/android-sdk`. En el emulador la app entra en **modo demo**, con lecturas simuladas y marcadas.
 
-## Documentación del proyecto
+## Documentación
 
 - [`docs/2026-10-19-lux0-diseno.md`](docs/2026-10-19-lux0-diseno.md): diseño y decisiones.
-- [`docs/superpowers/plans/2026-10-19-lux0-etapa1.md`](docs/superpowers/plans/2026-10-19-lux0-etapa1.md): plan de la etapa 1.
+- [`docs/superpowers/plans/`](docs/superpowers/plans/): planes de las etapas 1 y 2.
 - [`AGENTS.md`](AGENTS.md): guía para retomar el proyecto con un asistente de IA.
 
 ---

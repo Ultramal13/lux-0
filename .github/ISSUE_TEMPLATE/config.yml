@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: "📖 Cómo instalar la beta · How to install the beta"
+    url: https://github.com/Ultramal13/lux-0#instalar-la-beta
+    about: "Descarga el APK desde Releases · Download the APK from Releases"

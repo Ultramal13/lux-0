@@ -67,23 +67,60 @@ How it measures
    the correction (in mired).
 
 
+Other tools (stage 2)
+---------------------
+- Exposure: takes the time, ISO, and aperture the phone picks to expose the
+  circle (with -1 EV compensation) and computes EV100. It corrects for what you
+  aim at (18% gray or 90% white). With each camera's ISO, shutter, ND, and EV,
+  it suggests an aperture. This is reflected metering: about +/-1/3-1/2 stop
+  after calibration.
+- Lux: the phone's front light sensor (the auto-brightness one).
+- Flicker: the camera switches to 1/2000 s (only on that screen, at 15 fps
+  max). A pulsing light leaves horizontal bands, because each sensor row is
+  read a little later than the one before. A least-squares fit of the row
+  profile gives the frequency (100 Hz on 50 Hz mains, 120 Hz on 60 Hz) and its
+  depth. A shutter is safe if it lasts a whole number of cycles.
+- Compare: two frozen readings. The mired difference maps to CTO/CTB gels
+  (published values), and the Duv difference maps to approximate
+  Plus/Minus Green.
+- Map: the image is split into 8x6 cells, each one measured with the same
+  method, and colored relative to the reference.
+
+
 Battery and heat care
 ---------------------
-- Only one frame per second is analyzed (configurable).
+- One frame per second is analyzed (configurable). Flicker mode analyzes at
+  most one per second.
 - If Android reports the phone is warming up, the app measures more slowly.
-  At a moderate level it turns the camera off until the phone cools down.
-- Automatic pause after 90 s without touching the screen.
-- "Hold" freezes the reading and turns the camera off.
+  At a moderate level it turns the camera off, and resumes only after 60 s of
+  calm.
+- Automatic pause after 90 s without touching the screen. "Hold" freezes the
+  reading and turns the camera off. In lux, sessions, and settings the camera
+  is off.
 - An early version captured full-resolution RAW every second and heated the
-  phone. It was replaced by the lightweight method described above.
+  phone. It was replaced by the lightweight method described above. Test of
+  the current version on an S26 Ultra: +1.9 C over one minute of use, with no
+  thermal warning.
 
 
-Expected accuracy (estimated, still to be validated)
-----------------------------------------------------
+Security and privacy
+--------------------
+- No internet, no accounts, no ads, no analytics.
+- Data stays on the phone. It is excluded from cloud backup and from device
+  transfer.
+- The CSV leaves the phone only when the user exports it, and formulas are
+  neutralized for Excel and Sheets.
+- The app never touches the torch or system settings. Manual camera values are
+  always clamped to the ranges the device reports.
+
+
+Expected accuracy (estimated, being validated in the beta)
+----------------------------------------------------------
 - White sheet or diffuser, calibrated:   +/-150-300 K.
 - "Scene" mode (no reference):           +/-500 K or more.
-- The Canon tint value is approximate, because Canon does not publish the
-  exact equivalence between its G/M steps and Duv.
+- Exposure:                              +/-1/3-1/2 stop.
+- Canon tint is approximate, because Canon does not publish the exact
+  equivalence between its G/M steps and Duv.
 
 
 Is any of this secret?
@@ -94,14 +131,6 @@ No. Everything is based on public standards:
 - the DNG color model
 - Google's documented Camera2 API
 
-What is specific to LUX-0 is how the pieces fit together: the UI, the
-per-camera translation, the sessions, and the heat safeguards.
+What is specific to LUX-0 is how the pieces fit together.
 
-Stage 1 features (done):
-  color measurement, cameras 1 and 2 with capture settings, sessions with
-  thumbnail, comment and CSV export, light/dark/red-night themes,
-  calibration, built-in help.
-
-Stage 2 features (pending):
-  exposure, lux, flicker, compare lights -> gel, mixed-light map, target
-  temperature.
+Status: public beta v0.2.0, with stages 1 and 2 complete.

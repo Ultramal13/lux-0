@@ -68,21 +68,55 @@ Cómo mide (el proceso)
    cuentagotas de Lightroom o DPP. La app guarda la corrección (en mired).
 
 
+Otras herramientas (etapa 2)
+---------------------------
+- Exposición: se usa el tiempo, el ISO y el diafragma que elige el teléfono para
+  exponer el círculo (con −1 EV de compensación) y se calcula el EV100. Se corrige
+  por lo que se apunta (gris 18 % o blanco 90 %). Con el ISO, la obturación, el
+  ND y el EV de cada cámara, sale el diafragma sugerido. Es medición reflejada:
+  ≈ ±⅓–½ paso después de calibrar.
+- Lux: el sensor de luz del frente del teléfono (el del brillo automático).
+- Parpadeo: la cámara pasa a 1/2000 s (solo en esa pantalla, a 15 fps como
+  máximo). Una luz que pulsa deja bandas horizontales, porque cada fila del
+  sensor se lee un poco después. Con un ajuste por mínimos cuadrados del perfil
+  por filas se obtiene la frecuencia (100 Hz con red de 50 Hz, 120 Hz con 60 Hz)
+  y su intensidad. Una obturación es segura si dura un número entero de ciclos.
+- Comparar: dos lecturas congeladas. La diferencia en mired lleva a geles
+  CTO/CTB con valores publicados, y la diferencia en Duv a ≈ Plus/Minus Green.
+- Mapa: la imagen se divide en 8×6 celdas y a cada una se le calcula la
+  temperatura con el mismo método. Se colorea respecto de la referencia.
+
+
 Cuidados de batería y temperatura
 ---------------------------------
-- Se analiza solo un cuadro por segundo (configurable).
+- Se analiza solo un cuadro por segundo (configurable), y el modo parpadeo
+  como máximo uno por segundo.
 - Si Android avisa que el teléfono se calienta, la app mide más lento. Si el
-  calor es moderado, apaga la cámara hasta que se enfríe.
-- Pausa automática después de 90 s sin tocar la pantalla.
-- "Hold" congela la lectura y apaga la cámara.
+  calor es moderado, apaga la cámara, y solo la reanuda tras 60 s de calma.
+- Pausa automática después de 90 s sin tocar la pantalla. "Hold" congela la
+  lectura y apaga la cámara. En lux, sesiones y ajustes la cámara no funciona.
 - Una primera versión capturaba RAW a resolución completa cada segundo y
   calentaba el teléfono. Se reemplazó por el método liviano descrito arriba.
+  Prueba de la versión actual en un S26 Ultra: +1,9 °C en un minuto de uso,
+  sin aviso térmico.
 
 
-Precisión esperada (estimada, falta validar en terreno)
--------------------------------------------------------
-- Con hoja blanca o difusor y calibrado:  ±150–300 K.
-- En modo "escena" (sin referencia):      ±500 K o más.
+Seguridad y privacidad
+----------------------
+- Sin internet, sin cuentas, sin publicidad ni análisis de uso.
+- Datos solo en el teléfono, excluidos del respaldo en la nube y del traspaso
+  a otro equipo.
+- El CSV se comparte solo cuando el usuario lo exporta, y neutraliza fórmulas
+  para Excel o Sheets.
+- La app no toca la linterna ni ajustes del sistema. Los valores manuales de la
+  cámara se limitan siempre al rango que informa el propio equipo.
+
+
+Precisión esperada (estimada, en validación con la beta)
+--------------------------------------------------------
+- Color con hoja blanca o difusor, calibrado:  ±150–300 K.
+- Modo "escena" (sin referencia):             ±500 K o más.
+- Exposición:                                  ±⅓–½ paso.
 - El tinte para Canon es aproximado: Canon no publica la equivalencia exacta
   entre sus pasos G/M y el Duv.
 
@@ -94,16 +128,7 @@ No. Todo se basa en estándares públicos:
 - el locus de Planck y la aproximación de Krystek
 - el modelo de color de DNG
 - la API Camera2 documentada por Google
-Lo propio de LUX-0 es cómo se juntan las piezas: la interfaz, la traducción a
-cada cámara, las sesiones y los cuidados de temperatura. El código vive en la
-carpeta LUX-0 del computador (con historial en git), y se puede compartir o
-publicar como código abierto si uno quiere.
 
-Funciones de la etapa 1 (lista):
-  medición de color, cámaras 1 y 2 con ajustes de captura, sesiones con
-  miniatura, comentario y exportación CSV, temas claro/oscuro/noche rojo,
-  calibración.
+Lo propio de LUX-0 es cómo se juntan las piezas.
 
-Funciones de la etapa 2 (pendientes):
-  exposición, lux, parpadeo (flicker), comparar luces → gel, mapa de luces
-  mezcladas, objetivo.
+Estado: beta pública v0.2.0, con las etapas 1 y 2 completas.
