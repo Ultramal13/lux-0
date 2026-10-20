@@ -64,6 +64,12 @@ data class UiState(
     val lux: Double? = null,
     /** false si el teléfono no tiene sensor de luz. */
     val luxSensor: Boolean = true,
+    /** Parpadeo: ya se analizó al menos un cuadro, y lo detectado (null = sin parpadeo visible). */
+    val flickerChecked: Boolean = false,
+    val flicker: cl.lux0.color.Flicker.Result? = null,
+    /** Comparar: lecturas congeladas de la luz A y la B. */
+    val compareA: Reading? = null,
+    val compareB: Reading? = null,
 )
 
 /** Detecta el emulador de Android (la cámara virtual no permite medir color). */
@@ -101,14 +107,15 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
         while (true) {
             delay(prefs.intervalMs)
             val st = _state.value
-            if (st.hold || st.idle || st.mode !in listOf(1, 2, 3, 9)) continue
+            if (st.hold || st.idle || st.mode !in listOf(1, 2, 3, 4, 5, 9)) continue
             t += 0.15
             val cct = Calibration.apply(4500 + 400 * sin(t) + 60 * sin(t * 3.1), prefs.calOffsetMired)
             val duv = -0.004 + 0.003 * sin(t * 0.7)
             val ev = 10.0 + 0.8 * sin(t * 0.5)
             val lux = (420 + 60 * sin(t * 0.9)) * prefs.luxFactor
             _state.update {
-                it.copy(reading = Reading(cct, duv, 0.0, 0.0, false), warning = null, error = null, fresh = true, ev100 = ev, lux = lux)
+                it.copy(reading = Reading(cct, duv, 0.0, 0.0, false), warning = null, error = null, fresh = true, ev100 = ev, lux = lux,
+                    flickerChecked = true, flicker = cl.lux0.color.Flicker.Result(prefs.mainsHz * 2.0, 0.18))
             }
         }
     }
@@ -134,7 +141,12 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     private fun onSample(s: Sample) {
         if (_state.value.hold) return
         _state.update { st ->
-            st.copy(reading = s.reading ?: st.reading, warning = s.warning, error = null, fresh = s.reading != null, ev100 = s.ev100 ?: st.ev100)
+            if (s.flickerChecked || (st.mode == 4 && s.reading == null)) {
+                st.copy(warning = s.warning, error = null, flickerChecked = s.flickerChecked || st.flickerChecked,
+                    flicker = if (s.flickerChecked) s.flicker else st.flicker)
+            } else {
+                st.copy(reading = s.reading ?: st.reading, warning = s.warning, error = null, fresh = s.reading != null, ev100 = s.ev100 ?: st.ev100)
+            }
         }
     }
 
@@ -160,7 +172,47 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // --- acciones ---
-    fun setMode(m: Int) = _state.update { it.copy(mode = m) }
+    fun setMode(m: Int) {
+        // El modo parpadeo cambia la exposición de la cámara; al salir vuelve a la normal.
+        camera.setFlicker(m == 4)
+        _state.update { it.copy(mode = m, flickerChecked = if (m == 4) false else it.flickerChecked, flicker = if (m == 4) null else it.flicker) }
+    }
+
+    // --- comparar ---
+    fun measureA() = _state.value.reading?.let { r -> _state.update { it.copy(compareA = r) } }
+    fun measureB() = _state.value.reading?.let { r -> _state.update { it.copy(compareB = r) } }
+    fun swapCompare() = _state.update { it.copy(compareA = it.compareB, compareB = it.compareA) }
+    fun clearCompare() = _state.update { it.copy(compareA = null, compareB = null) }
+
+    /** Resultado de comparar: diferencia y gel para que B iguale a A. */
+    fun compareText(): List<String> {
+        val a = _state.value.compareA ?: return listOf(tr("mide la luz A", "measure light A"))
+        val b = _state.value.compareB ?: return listOf(tr("ahora mide la luz B", "now measure light B"))
+        val dMired = ColorMath.mired(a.cct) - ColorMath.mired(b.cct)
+        val g = cl.lux0.color.Gels.suggest(b.cct, b.duv, a.cct, a.duv)
+        return listOf(
+            String.format(Locale.US, "Δ %+.0f mired · Δduv %+.3f", dMired, a.duv - b.duv),
+            tr("para que b iguale a a: ", "to make b match a: ") + g.label,
+            tr("o pon el panel b en ", "or set panel b to ") + "${Math.round(a.cct / 100.0) * 100} k",
+        )
+    }
+
+    // --- parpadeo ---
+    /** Recomendación de obturación según el parpadeo detectado y los fps de cada cámara. */
+    fun flickerText(slot: Int): String {
+        val st = _state.value
+        if (!st.flickerChecked) return tr("midiendo…", "measuring…")
+        val f = st.flicker ?: return tr("✓ sin parpadeo visible", "✓ no visible flicker")
+        val c = if (slot == 1) prefs.cap1 else prefs.cap2
+        val safe = cl.lux0.color.Flicker.safeShutters(c.fps, f.hz)
+        val t = cl.lux0.color.Exposure.shutterSeconds(c.shutter, c.fps)
+        return when {
+            t != null && cl.lux0.color.Flicker.isSafe(t, f.hz) -> "✓ ${c.shutter} " + tr("seguro", "safe")
+            safe.isEmpty() -> tr("riesgo: a ", "risk: at ") + cl.lux0.data.CaptureOptions.fpsLabel(c.fps) + tr("p no hay obturación segura", "p no safe shutter")
+            else -> (if (t == null) "auto · " else tr("riesgo · ", "risk · ")) + tr("usa ", "use ") +
+                safe.take(2).joinToString(tr(" o ", " or ")) { "${it.first} (${it.second})" }
+        }
+    }
     /** Hold congela la lectura y apaga la cámara (el visor la vuelve a encender al soltar). */
     fun toggleHold() = _state.update { it.copy(hold = !it.hold) }
     fun stepSource(d: Int) = _state.update { it.copy(source = (it.source + d).mod(SOURCES.size)) }
@@ -245,7 +297,8 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
         store.save(Measurement(
             id, store.activeSession().id, id,
             (if (st.demo) tr("demo (simulado) · ", "demo (simulated) · ") else "") + when (st.mode) {
-                2 -> tr("exposición", "exposure"); 3 -> "lux"; else -> SOURCES[st.source]
+                2 -> tr("exposición", "exposure"); 3 -> "lux"; 4 -> tr("parpadeo", "flicker")
+                5 -> tr("comparar", "compare"); else -> SOURCES[st.source]
             },
             r?.cct ?: 0.0, r?.duv ?: 0.0,
             c1.label, slotText(1, r), c2.label, slotText(2, r), prefs.cap1, prefs.cap2, path, "",
@@ -259,6 +312,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     fun slotText(slot: Int, r: Reading?): String = when (_state.value.mode) {
         2 -> expoText(slot)
         3 -> ""
+        4 -> flickerText(slot)
         else -> r?.let { recText(cam(slot), it) } ?: ""
     }
 

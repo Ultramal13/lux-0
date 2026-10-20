@@ -48,6 +48,13 @@ private val HELP_ES = listOf(
     "lux (tecla 3)" to
         "usa el sensor de luz del frente del teléfono (el del brillo automático): apunta la pantalla hacia la luz. " +
         "muestra lux y pie-candela. es aproximado y sirve para comparar luces; la cámara queda apagada.",
+    "parpadeo (tecla 4)" to
+        "detecta luces que pulsan (led, fluorescentes, dimmers): la cámara usa 1/2000 s y lee las bandas del rolling shutter. " +
+        "muestra la frecuencia (100 hz con red de 50 hz, 120 hz con 60 hz) y para cada cámara dice si su obturación es segura " +
+        "o cuál usar (como velocidad y ángulo) según sus fps. al salir de esta pantalla la cámara vuelve a la exposición normal.",
+    "comparar (tecla 5)" to
+        "mide la luz a (botón medir a), luego la b sobre la misma hoja. te da la diferencia en mired y tinte, " +
+        "el gel para que b iguale a a (cto/ctb y ≈ plus/minus green) o el valor en k para un panel regulable.",
     "temperatura objetivo" to
         "en ajustes eliges la temperatura que quieres (ej. 5600 k). en color aparece \"◎ objetivo\" con el gel para llevar la luz medida a ese valor.",
     "ajustes de calibración de exposición y lux" to
@@ -122,6 +129,13 @@ private val HELP_EN = listOf(
     "lux (key 3)" to
         "uses the phone's front light sensor (the auto-brightness one): point the screen at the light. " +
         "shows lux and foot-candles. it is approximate and useful to compare lights; the camera stays off.",
+    "flicker (key 4)" to
+        "detects pulsing lights (leds, fluorescents, dimmers): the camera uses 1/2000 s and reads the rolling-shutter bands. " +
+        "it shows the frequency (100 hz on 50 hz mains, 120 hz on 60 hz) and tells each camera whether its shutter is safe " +
+        "or which one to use (as speed and angle) for its fps. when you leave this screen the camera returns to normal exposure.",
+    "compare (key 5)" to
+        "measure light a (measure a button), then b on the same sheet. it gives the difference in mired and tint, " +
+        "the gel to make b match a (cto/ctb and ≈ plus/minus green) or the k value for a dimmable panel.",
     "target temperature" to
         "in settings you pick the temperature you want (e.g. 5600 k). in color mode \"◎ target\" shows the gel that brings the measured light to it.",
     "exposure and lux calibration" to

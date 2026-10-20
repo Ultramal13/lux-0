@@ -33,7 +33,15 @@ import java.util.concurrent.Executor
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-data class Sample(val reading: Reading?, val warning: String?, val roi: RoiResult?, val ev100: Double? = null)
+data class Sample(
+    val reading: Reading?,
+    val warning: String?,
+    val roi: RoiResult?,
+    val ev100: Double? = null,
+    /** Solo en modo parpadeo: true si se pudo analizar el cuadro. */
+    val flickerChecked: Boolean = false,
+    val flicker: cl.lux0.color.Flicker.Result? = null,
+)
 
 /** Fracción del lado corto del cuadro que mide el círculo. La mira del visor usa la misma. */
 const val ROI_FRACTION = 0.19f
@@ -70,6 +78,34 @@ class MeterCamera(
     @Volatile private var generation = 0
     @Volatile private var released = false
     @Volatile var intervalMs: Long = 1000
+    /** Modo parpadeo: exposición manual corta para ver las bandas del rolling shutter. */
+    @Volatile private var flicker = false
+    private var aeTimeNs = 10_000_000L
+    private var aeIso = 400
+
+    private val repeatCallback = object : CameraCaptureSession.CaptureCallback() {
+        override fun onCaptureCompleted(cs: CameraCaptureSession, req: CaptureRequest, res: android.hardware.camera2.TotalCaptureResult) {
+            lastResult = res
+            if (!flicker) {
+                res.get(android.hardware.camera2.CaptureResult.SENSOR_EXPOSURE_TIME)?.let { aeTimeNs = it }
+                res.get(android.hardware.camera2.CaptureResult.SENSOR_SENSITIVITY)?.let { aeIso = it }
+            }
+        }
+    }
+
+    /** Activa o desactiva el modo parpadeo sin reiniciar la cámara. */
+    fun setFlicker(on: Boolean) {
+        if (released) return
+        handler.post {
+            if (flicker == on) return@post
+            flicker = on
+            history.clear()
+            val d = device ?: return@post
+            val pv = previewSurface ?: return@post
+            val yuv = reader?.surface ?: return@post
+            try { session?.setRepeatingRequest(request(d, pv, yuv), repeatCallback, handler) } catch (e: Exception) { Log.w("lux0", "modo parpadeo", e) }
+        }
+    }
     @Volatile var calOffsetMired: Double = 0.0
 
     var previewSize: Size = Size(640, 480)
@@ -178,11 +214,7 @@ class MeterCamera(
                         if (gen != generation) { s.close(); return }
                         session = s
                         try {
-                            s.setRepeatingRequest(request(d, preview, yuv), object : CameraCaptureSession.CaptureCallback() {
-                                override fun onCaptureCompleted(cs: CameraCaptureSession, req: CaptureRequest, res: android.hardware.camera2.TotalCaptureResult) {
-                                    lastResult = res
-                                }
-                            }, handler)
+                            s.setRepeatingRequest(request(d, preview, yuv), repeatCallback, handler)
                         } catch (e: Exception) {
                             Log.w("lux0", "repeating", e)
                             fail(gen, tr("no se pudo iniciar la medición · toca para reintentar", "could not start measuring · tap to retry"))
@@ -226,6 +258,16 @@ class MeterCamera(
             0, 1, 0, 1, 1, 1,
         )))
         b.set(CaptureRequest.CONTROL_EFFECT_MODE, CaptureRequest.CONTROL_EFFECT_MODE_OFF)
+        if (flicker) {
+            // 1/2000 s con el ISO subido para mantener el brillo que eligió el AE.
+            val shortNs = 500_000L
+            val range = c.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)
+            val iso = (aeIso * aeTimeNs.toDouble() / shortNs).toInt().let { range?.clamp(it) ?: it }
+            b.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF)
+            b.set(CaptureRequest.CONTROL_AE_ANTIBANDING_MODE, CaptureRequest.CONTROL_AE_ANTIBANDING_MODE_OFF)
+            b.set(CaptureRequest.SENSOR_EXPOSURE_TIME, shortNs)
+            b.set(CaptureRequest.SENSOR_SENSITIVITY, iso)
+        }
         val tm = c.get(CameraCharacteristics.TONEMAP_AVAILABLE_TONE_MAP_MODES) ?: intArrayOf()
         if (CaptureRequest.TONEMAP_MODE_GAMMA_VALUE in tm) {
             b.set(CaptureRequest.TONEMAP_MODE, CaptureRequest.TONEMAP_MODE_GAMMA_VALUE)
@@ -256,6 +298,7 @@ class MeterCamera(
         if (now - lastProcessed < intervalMs) return
         lastProcessed = now
         val c = chars ?: return
+        if (flicker) { processFlicker(img); return }
         try {
             val p = img.planes
             val roi = computeRoiYuv(
@@ -289,6 +332,30 @@ class MeterCamera(
         } catch (e: Exception) {
             Log.w("lux0", "cálculo de color", e)
             onSample(Sample(null, tr("no se pudo calcular", "could not compute"), null))
+        }
+    }
+
+    /** Perfil de luminancia por filas (en orden de lectura del sensor) → frecuencia y profundidad. */
+    private fun processFlicker(img: Image) {
+        try {
+            val y = img.planes[0]
+            val h = img.height; val w = img.width
+            val rows = DoubleArray(h)
+            for (r in 0 until h) {
+                var sum = 0L; var n = 0
+                var col = w / 8
+                while (col < w - w / 8) { sum += y.buffer.get(r * y.rowStride + col * y.pixelStride).toInt() and 0xFF; n++; col += 4 }
+                rows[r] = sum.toDouble() / n
+            }
+            val skew = lastResult?.get(android.hardware.camera2.CaptureResult.SENSOR_ROLLING_SHUTTER_SKEW)
+            if (skew == null || skew <= 0) {
+                onSample(Sample(null, tr("este teléfono no informa el tiempo de lectura", "this phone does not report readout time"), null)); return
+            }
+            if (rows.average() < 8) { onSample(Sample(null, tr("muy oscuro", "too dark"), null)); return }
+            val res = cl.lux0.color.Flicker.detect(rows, skew / 1e9 / h)
+            onSample(Sample(null, null, null, flickerChecked = true, flicker = res))
+        } catch (e: Exception) {
+            Log.w("lux0", "parpadeo", e)
         }
     }
 

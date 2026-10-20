@@ -54,7 +54,7 @@ import cl.lux0.color.Reading
 import java.util.Locale
 import kotlin.math.roundToInt
 
-val MODE_NAMES: Map<Int, String> get() = mapOf(1 to "color", 2 to tr("exposición", "exposure"), 3 to "lux", 7 to tr("sesiones", "sessions"), 8 to tr("ajustes", "settings"), 9 to tr("calibrar", "calibrate"), 10 to tr("ayuda", "help"))
+val MODE_NAMES: Map<Int, String> get() = mapOf(1 to "color", 2 to tr("exposición", "exposure"), 3 to "lux", 4 to tr("parpadeo", "flicker"), 5 to tr("comparar", "compare"), 7 to tr("sesiones", "sessions"), 8 to tr("ajustes", "settings"), 9 to tr("calibrar", "calibrate"), 10 to tr("ayuda", "help"))
 
 @Composable
 fun Header(mode: Int, theme: String, onTheme: () -> Unit, onHelp: () -> Unit = {}) {
@@ -226,8 +226,11 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, modifier: Modifier = Modifier, 
     Column(modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(p.screen).padding(12.dp)) {
         Row {
             Text(
-                if (st.mode == 2) tr("exposición reflejada · ", "reflected exposure · ") + "${vm.prefs.reflectance}%"
-                else "${SOURCES[st.source]} · ${vm.prefs.reflectance}%",
+                when (st.mode) {
+                    2 -> tr("exposición reflejada · ", "reflected exposure · ") + "${vm.prefs.reflectance}%"
+                    4 -> tr("parpadeo · exposición 1/2000", "flicker · exposure 1/2000")
+                    else -> "${SOURCES[st.source]} · ${vm.prefs.reflectance}%"
+                },
                 style = mono(10, p.screenDim),
             )
             Spacer(Modifier.weight(1f))
@@ -269,13 +272,31 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, modifier: Modifier = Modifier, 
                 Text(tr("escena a iso 100 · ≈ reflejada", "scene at iso 100 · ≈ reflected"), style = mono(9, p.screenDim))
             }
         }
+        val flick: @Composable () -> Unit = {
+            Column {
+                val f = st.flicker
+                Text(
+                    when {
+                        !st.flickerChecked -> tr("midiendo…", "measuring…")
+                        f == null -> tr("sin parpadeo", "no flicker")
+                        else -> "${f.hz.roundToInt()} hz"
+                    },
+                    style = mono(if (f != null) 36 else 22, p.screenText, true),
+                )
+                Text(
+                    if (f != null) tr("parpadeo ", "flicker ") + "${(f.depth * 100).roundToInt()} % · " + tr("≈ red ", "≈ mains ") + "${(f.hz / 2).roundToInt()} hz"
+                    else tr("profundidad < 3 %", "depth < 3 %"),
+                    style = mono(9, p.screenDim),
+                )
+            }
+        }
         val active = !st.idle && !st.hot && !st.hold
         if (fill) {
             Viewfinder(vm, Modifier.fillMaxWidth().weight(1f), active, st.retry, overlay = {
                 Box(
                     Modifier.align(Alignment.BottomStart).padding(6.dp).clip(RoundedCornerShape(6.dp))
                         .background(p.screen.copy(alpha = 0.7f)).padding(horizontal = 8.dp, vertical = 4.dp),
-                ) { if (st.mode == 2) expo() else reading(36) }
+                ) { when (st.mode) { 2 -> expo(); 4 -> flick(); else -> reading(36) } }
             }, onView = onView)
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -289,11 +310,15 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, modifier: Modifier = Modifier, 
             st.idle -> tr("en pausa para ahorrar batería · toca la pantalla", "paused to save battery · tap the screen")
             else -> st.error ?: st.warning
         }
-        val hint = if (st.mode == 2) tr("apunta el círculo al sujeto o a una tarjeta gris", "aim the circle at the subject or a gray card")
-            else SOURCE_HINTS[st.source]
+        val hint = when (st.mode) {
+            2 -> tr("apunta el círculo al sujeto o a una tarjeta gris", "aim the circle at the subject or a gray card")
+            4 -> tr("apunta a una zona iluminada por la luz que quieres revisar", "aim at an area lit by the light you want to check")
+            5 -> tr("mide la luz a, luego la b, sobre la misma hoja", "measure light a, then b, on the same sheet")
+            else -> SOURCE_HINTS[st.source]
+        }
         Text(alert ?: hint, style = mono(11, if (alert != null) p.accent else p.screenDim),
             modifier = Modifier.padding(top = 8.dp))
-        if (st.mode != 2) DotScale(r?.cct)
+        if (st.mode != 2 && st.mode != 4) DotScale(r?.cct)
         Box(Modifier.fillMaxWidth().padding(top = 6.dp).height(1.dp).background(p.screenDim))
         listOf(1, 2).forEach { slot ->
             val cam = vm.cam(slot)
@@ -422,4 +447,41 @@ fun LuxPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
         if (vm.prefs.luxFactor != 1.0) Text(tr("factor de calibración ", "calibration factor ") + String.format(Locale.US, "×%.1f", vm.prefs.luxFactor),
             style = mono(9, p.screenDim))
     }
+}
+
+/** Comparar dos luces: congela A y B y sugiere el gel para igualarlas. */
+@Composable
+fun ComparePanel(vm: MeterViewModel, st: UiState) {
+    val p = LocalPalette.current
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        listOf("a" to st.compareA, "b" to st.compareB).forEach { (name, rd) ->
+            Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(p.key).padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically) {
+                Text(tr("luz ", "light ") + name, style = mono(13, p.keyText, true), modifier = Modifier.width(70.dp))
+                Text(rd?.let { "${it.cct.roundToInt()} k  " + String.format(Locale.US, "%+.3f", it.duv) } ?: "—",
+                    style = mono(13, p.keyText), modifier = Modifier.weight(1f))
+                Seg(listOf(tr("medir ", "measure ") + name), -1, { if (name == "a") vm.measureA() else vm.measureB() })
+            }
+        }
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(p.screen).padding(10.dp)) {
+            vm.compareText().forEachIndexed { i, line ->
+                Text(line, style = mono(if (i == 1) 13 else 11, if (i == 1) p.accent else p.screenText, i == 1))
+            }
+        }
+        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Seg(listOf(tr("intercambiar", "swap")), -1, { vm.swapCompare() })
+            Seg(listOf(tr("borrar", "clear")), -1, { vm.clearCompare() })
+        }
+    }
+}
+
+/** Parpadeo: recordatorio de la red eléctrica configurada. */
+@Composable
+fun FlickerInfoRow(vm: MeterViewModel) {
+    val p = LocalPalette.current
+    Text(
+        tr("red ", "mains ") + "${vm.prefs.mainsHz} hz → " + tr("las luces suelen parpadear a ", "lights usually flicker at ") +
+            "${vm.prefs.mainsHz * 2} hz · " + tr("cambia fps u obturación en la tarjeta", "change fps or shutter in the card"),
+        style = mono(10, p.text), modifier = Modifier.padding(top = 8.dp, bottom = 6.dp),
+    )
 }

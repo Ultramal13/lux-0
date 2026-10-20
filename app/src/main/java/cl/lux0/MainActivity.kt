@@ -56,6 +56,8 @@ import cl.lux0.ui.KeyGrid
 import cl.lux0.ui.SourceRow
 import cl.lux0.ui.ReflectanceRow
 import cl.lux0.ui.LuxPanel
+import cl.lux0.ui.ComparePanel
+import cl.lux0.ui.FlickerInfoRow
 import cl.lux0.ui.LocalPalette
 import cl.lux0.ui.MeterViewModel
 import cl.lux0.ui.NocheRojo
@@ -99,9 +101,9 @@ fun App(vm: MeterViewModel = viewModel()) {
             }
             .safeDrawingPadding().padding(horizontal = 14.dp, vertical = 8.dp)) {
             Header(st.mode, st.theme, vm::cycleTheme) { vm.setMode(10) }
-            val meter = st.mode == 1 || st.mode == 2 || st.mode == 9
+            val meter = st.mode in listOf(1, 2, 4, 5, 9)
             if (meter) {
-                val fill = st.mode == 1 || st.mode == 2
+                val fill = st.mode in listOf(1, 2, 4, 5)
                 // En color la pantalla negra se estira (el visor llena el espacio libre); en calibración no.
                 val screenMod = if (fill) Modifier.weight(1f) else Modifier
                 if (granted) BlackScreen(vm, st, screenMod, fill) { textureView = it }
@@ -109,8 +111,12 @@ fun App(vm: MeterViewModel = viewModel()) {
                     Text(tr("lux-0 necesita la cámara para medir.\nvuelve a abrir la app para dar el permiso.", "lux-0 needs the camera to measure.\nreopen the app to grant permission."), style = mono(13, palette.screenText))
                 }
                 if (fill) {
-                    if (st.mode == 2) ReflectanceRow(vm, st.version) else SourceRow(st, vm::setSource)
-                    CameraCards(vm, st.version)
+                    when (st.mode) {
+                        2 -> { ReflectanceRow(vm, st.version); CameraCards(vm, st.version) }
+                        4 -> { FlickerInfoRow(vm); CameraCards(vm, st.version) }
+                        5 -> ComparePanel(vm, st)
+                        else -> { SourceRow(st, vm::setSource); CameraCards(vm, st.version) }
+                    }
                 } else Box(Modifier.weight(1f)) { CalibrationPanel(vm, st) }
             } else if (st.mode == 3) {
                 LuxPanel(vm, st, Modifier.weight(1f))
