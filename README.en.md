@@ -142,3 +142,5 @@ On the emulator, the app switches to **demo mode**. The readings are simulated a
 ---
 
 <sub>Original "handheld device" design. The icon is the digit **0** in Morse code (−−−−−) drawn as a ring, with a point of light in the center.</sub>
+
+<sub>© 2026 **Bexia**. All rights reserved. You may download and use the beta and report issues; the code may not be copied or redistributed without permission. See [`LICENSE`](LICENSE).</sub>

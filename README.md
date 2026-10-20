@@ -140,3 +140,5 @@ Crea un `local.properties` con `sdk.dir=/ruta/al/android-sdk`. En el emulador la
 ---
 
 <sub>Diseño propio estilo "aparato de mano". El ícono es el **0** en código Morse (−−−−−) en forma de anillo, con un punto de luz.</sub>
+
+<sub>© 2026 **Bexia**. Todos los derechos reservados. Puedes descargar y usar la beta y reportar problemas; el código no se puede copiar ni redistribuir sin permiso. Ver [`LICENSE`](LICENSE).</sub>
