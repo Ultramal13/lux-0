@@ -74,7 +74,7 @@
 
 ## Known limitations
 
-**Estimated accuracy,** which this beta is meant to validate:
+**Estimated accuracy,** which this beta is meant to validate. Real comparisons are logged in [`docs/validacion.md`](docs/validacion.md). The first one, on an S26 Ultra against the R5 with Capture One, showed an 18-mired offset before calibration, which calibration corrects.
 
 | Measurement | Accuracy |
 |---|---|
@@ -136,6 +136,7 @@ On the emulator, the app switches to **demo mode**. The readings are simulated a
 
 - [`docs/2026-10-19-lux0-diseno.md`](docs/2026-10-19-lux0-diseno.md): design and decisions.
 - [`docs/superpowers/plans/`](docs/superpowers/plans/): stage 1 and stage 2 plans.
+- [`docs/validacion.md`](docs/validacion.md): real measurements compared with cameras and references.
 - [`AGENTS.md`](AGENTS.md): guide for picking the project up with an AI coding assistant.
 
 ---

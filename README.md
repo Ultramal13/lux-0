@@ -74,7 +74,7 @@
 
 ## Limitaciones conocidas
 
-**Precisión estimada,** en validación justamente con esta beta:
+**Precisión estimada,** en validación justamente con esta beta. Las comparaciones reales se registran en [`docs/validacion.md`](docs/validacion.md); la primera, en un S26 Ultra contra la R5 con Capture One, mostró una desviación de 18 mired sin calibrar, que se corrige con la calibración.
 
 | Medición | Precisión |
 |---|---|
@@ -134,6 +134,7 @@ Crea un `local.properties` con `sdk.dir=/ruta/al/android-sdk`. En el emulador la
 
 - [`docs/2026-10-19-lux0-diseno.md`](docs/2026-10-19-lux0-diseno.md): diseño y decisiones.
 - [`docs/superpowers/plans/`](docs/superpowers/plans/): planes de las etapas 1 y 2.
+- [`docs/validacion.md`](docs/validacion.md): mediciones reales comparadas con cámara y referencias.
 - [`AGENTS.md`](AGENTS.md): guía para retomar el proyecto con un asistente de IA.
 
 ---
