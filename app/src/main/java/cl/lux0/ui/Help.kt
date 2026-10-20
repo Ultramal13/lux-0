@@ -219,5 +219,11 @@ fun HelpPanel(modifier: Modifier) {
                 Text(body, style = mono(11, p.keyText), modifier = Modifier.padding(top = 4.dp))
             }
         }
+        // Versión al final, para copiarla al reportar un problema.
+        item {
+            val v = appVersion(androidx.compose.ui.platform.LocalContext.current)
+            Text("lux-0 · v$v · " + cl.lux0.tr("inclúyela al reportar un problema", "include it when reporting a problem"),
+                style = mono(11, p.text.copy(alpha = 0.7f)), modifier = Modifier.padding(4.dp))
+        }
     }
 }

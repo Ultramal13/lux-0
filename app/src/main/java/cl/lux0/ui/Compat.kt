@@ -54,6 +54,11 @@ fun Compat.allows(key: Int): Boolean = when (this) {
     Compat.NONE -> key in listOf(3, 7, 8)
 }
 
+/** Nombre de la versión instalada (el del APK, ej. "0.3.1-beta"). */
+fun appVersion(context: Context): String = try {
+    context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "?"
+} catch (e: Exception) { "?" }
+
 /** Versión del aviso: si cambia, se vuelve a pedir aceptación. */
 const val TERMS_VERSION = 1
 

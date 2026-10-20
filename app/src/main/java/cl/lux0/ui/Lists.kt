@@ -281,6 +281,9 @@ fun SettingsPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
         SettingRow(tr("ayuda", "help")) {
             Seg(listOf(tr("qué significa cada cosa →", "what each setting means →")), -1, { vm.setMode(10) })
         }
+        SettingRow(tr("versión", "version")) {
+            Text("lux-0 · v" + appVersion(androidx.compose.ui.platform.LocalContext.current), style = mono(12, p.text))
+        }
         Spacer(Modifier.height(12.dp))
     }
 
