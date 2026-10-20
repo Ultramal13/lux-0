@@ -8,7 +8,7 @@
 
 **A light meter for photo and video, for Android.** LUX-0 uses the phone's camera and light sensor to measure **color temperature (Kelvin), tint, exposure, lux, and flicker**. It then tells you what to set on **your cameras**: white balance, aperture, and a safe shutter.
 
-> **Public beta v0.2.0: looking for beta testers.** 🧪
+> **Public beta v0.2.1: looking for beta testers.** 🧪
 > Every tool works and has been tested on a Samsung Galaxy S26 Ultra. We need testing on **more phones and more lights** to validate accuracy.
 > The app is in **English and Spanish** and follows the phone's language.
 
@@ -16,7 +16,7 @@
 
 ## Install the beta
 
-1. Go to **[Releases](https://github.com/Ultramal13/lux-0/releases)** and download `LUX-0-v0.2.0-beta.apk`.
+1. Go to **[Releases](https://github.com/Ultramal13/lux-0/releases)** and download the latest APK (`LUX-0-v0.2.1-beta.apk`).
 2. Open it on your Android phone. If asked, allow **"install unknown apps"** for your browser or file manager.
 3. Open LUX-0 and grant the **camera** permission, which is the only one it asks for.
 
