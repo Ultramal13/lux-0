@@ -360,11 +360,11 @@ fun CalibrationPanel(vm: MeterViewModel, st: UiState) {
         Text(
             tr(
                 "1. pon una hoja blanca bajo la luz y fotografíala en raw con la r5.\n" +
-                    "2. en dpp, lightroom o camera raw usa el cuentagotas de balance sobre la hoja y anota los k.\n" +
+                    "2. en capture one (herramienta balance de blancos, cuentagotas w), lightroom o dpp haz clic en la hoja y anota los k.\n" +
                     "3. mide la misma hoja aquí (fuente blanco/gris) e ingresa ese valor.\n" +
                     "ojo: papel muy brillante (blanqueadores ópticos) puede leer más frío con luz de día.",
                 "1. put a white sheet under the light and shoot it in raw with your camera.\n" +
-                    "2. in dpp, lightroom or camera raw use the white balance eyedropper on the sheet and note the k.\n" +
+                    "2. in capture one (white balance tool, eyedropper w), lightroom or dpp click the sheet and note the k.\n" +
                     "3. measure the same sheet here (white/gray source) and enter that value.\n" +
                     "note: very bright paper (optical brighteners) may read cooler in daylight.",
             ),

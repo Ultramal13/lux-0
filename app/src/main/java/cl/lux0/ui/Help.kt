@@ -84,7 +84,7 @@ private val HELP_ES = listOf(
         "en la etapa 2 se usará para exposición (qué diafragma o nd usar) y para avisar parpadeo según fps y obturación.",
     "calibración" to
         "corrige la diferencia propia del sensor del celular. foto raw de la hoja blanca con la r5, lees los k con el cuentagotas " +
-        "de balance en dpp o lightroom, mides la misma hoja aquí e ingresas ese valor. sin calibrar el margen es mayor (±300 k).",
+        "de balance en capture one, lightroom o dpp (canon), mides la misma hoja aquí e ingresas ese valor. usa siempre el mismo programa. sin calibrar el margen es mayor (±300 k).",
     "hold y guardar" to
         "hold congela el número (y apaga la cámara) para copiarlo con calma. guardar lo agrega a la sesión activa con " +
         "hora, miniatura, recomendación y ajustes de captura; tócalo en sesiones para escribir un comentario.",
@@ -169,7 +169,7 @@ private val HELP_EN = listOf(
         "in stage 2 it will be used for exposure (which aperture or nd to use) and for flicker warnings based on fps and shutter.",
     "calibration" to
         "corrects the phone sensor's own bias. shoot a white sheet in raw with your camera, read the k with the white balance " +
-        "eyedropper in dpp or lightroom, measure the same sheet here and enter that value. uncalibrated, the margin is wider (±300 k).",
+        "eyedropper in capture one, lightroom or dpp (canon), measure the same sheet here and enter that value. always use the same program. uncalibrated, the margin is wider (±300 k).",
     "hold and save" to
         "hold freezes the number (and turns the camera off) so you can copy it calmly. save adds it to the active session with " +
         "time, thumbnail, recommendation and capture settings; tap it in sessions to write a comment.",
