@@ -27,6 +27,17 @@ Antes de cambiar algo, lee:
 - **Calor:** la v0.1, que capturaba RAW a resolución completa cada segundo, calentó el teléfono. No vuelvas a capturas RAW o de resolución completa periódicas. Mantén el flujo YUV 640x480, los fps bajos, la protección térmica, la pausa automática y que hold apague la cámara.
 - **Diseño propio:** no copies el aspecto, nombres ni marcas de otras apps o medidores.
 - **Datos de cámaras:** cada modelo de `app/src/main/assets/cameras.json` debe venir del manual o de una fuente oficial. Si no se pudo verificar, va con `"verified": false` (se muestra con `*`). No inventes rangos.
+- **Seguridad y datos (revisión del 2026-10-20):**
+  - Sin internet y sin respaldo en la nube (`allowBackup=false` + `data_extraction_rules.xml`).
+  - FileProvider solo expone `cache/export/`.
+  - Las miniaturas se guardan por nombre y se resuelven siempre dentro de `thumbs/`.
+  - El CSV neutraliza fórmulas.
+  - `Store` escribe en segundo plano y salta registros dañados.
+  - No reintroducir rutas absolutas, red ni respaldo.
+- **Calor:**
+  - El modo parpadeo fija una duración de cuadro ≥ 1/15 s y analiza como máximo 1 vez por segundo.
+  - La protección térmica tiene histéresis de 60 s.
+  - No agregar trabajo por cuadro en el hilo de cámara.
 - **Captura sin escribir:** ISO, fps, obturación, f/ y ND se eligen de listas (`CaptureOptions.kt`), sin texto libre.
 
 ## Entorno (Mac Apple Silicon)

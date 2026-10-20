@@ -124,9 +124,24 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /** Ligero: mide cada 3 s. Moderado o más: apaga la cámara hasta que se enfríe. */
+    private var coolJob: kotlinx.coroutines.Job? = null
+
+    /**
+     * Ligero: mide cada 3 s. Moderado o más: apaga la cámara. Para no encender y apagar en ciclos, solo
+     * se reanuda cuando el estado baja a "sin calor", o queda en "ligero" al menos 60 s seguidos.
+     */
     private fun onThermal(status: Int) {
         camera.intervalMs = if (status >= PowerManager.THERMAL_STATUS_LIGHT) maxOf(prefs.intervalMs, 3000L) else prefs.intervalMs
-        _state.update { it.copy(hot = status >= PowerManager.THERMAL_STATUS_MODERATE) }
+        coolJob?.cancel()
+        when {
+            status >= PowerManager.THERMAL_STATUS_MODERATE -> _state.update { it.copy(hot = true) }
+            !_state.value.hot -> Unit
+            status == PowerManager.THERMAL_STATUS_NONE -> _state.update { it.copy(hot = false) }
+            else -> coolJob = viewModelScope.launch {
+                delay(60_000)
+                if (power.currentThermalStatus < PowerManager.THERMAL_STATUS_MODERATE) _state.update { it.copy(hot = false) }
+            }
+        }
     }
 
     fun touch() {
@@ -155,9 +170,11 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     // --- cámara ---
-    fun previewAspect(): Float {
-        val sz = camera.choosePreviewSize(prefs.frontCamera) ?: return 4f / 3f
-        return sz.width.toFloat() / sz.height
+    private val aspectCache = HashMap<Boolean, Float>()
+
+    /** Proporción del cuadro; se consulta a la cámara una sola vez por lado (trasera/frontal). */
+    fun previewAspect(): Float = aspectCache.getOrPut(prefs.frontCamera) {
+        try { camera.aspectFor(prefs.frontCamera) } catch (e: Exception) { 4f / 3f }
     }
 
     fun startCamera(texture: SurfaceTexture) {
@@ -303,24 +320,29 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
         val r = if (st.mode == 3) null else st.reading
         if (r == null && st.mode != 3) return
         if (r != null && (!r.cct.isFinite() || !r.duv.isFinite())) return
+        val evOk = st.ev100?.let { sceneEv(it) }?.takeIf { it.isFinite() }
+        val luxOk = st.lux?.takeIf { it.isFinite() && it >= 0 }
         if (st.mode == 3 && st.lux == null) return
         val id = System.currentTimeMillis()
-        val path = thumb?.let {
-            val f = File(store.thumbDir, "$id.jpg")
-            FileOutputStream(f).use { out -> it.compress(Bitmap.CompressFormat.JPEG, 80, out) }
-            f.path
+        // Solo se guarda el nombre del archivo; la ruta se resuelve siempre dentro de thumbs/.
+        val thumbName = thumb?.let {
+            try {
+                FileOutputStream(File(store.thumbDir, "$id.jpg")).use { out -> it.compress(Bitmap.CompressFormat.JPEG, 80, out) }
+                "$id.jpg"
+            } catch (e: Exception) { null }
         }
         val c1 = cam(1); val c2 = cam(2)
-        store.save(Measurement(
+        val ok = store.save(Measurement(
             id, store.activeSession().id, id,
             (if (st.demo) tr("demo (simulado) · ", "demo (simulated) · ") else "") + when (st.mode) {
                 2 -> tr("exposición", "exposure"); 3 -> "lux"; 4 -> tr("parpadeo", "flicker")
                 5 -> tr("comparar", "compare"); 6 -> tr("mapa", "map"); else -> SOURCES[st.source]
             },
             r?.cct ?: 0.0, r?.duv ?: 0.0,
-            c1.label, slotText(1, r), c2.label, slotText(2, r), prefs.cap1, prefs.cap2, path, "",
-            ev100 = st.ev100?.let { sceneEv(it) }, lux = if (st.mode == 3) st.lux else null,
+            c1.label, slotText(1, r), c2.label, slotText(2, r), prefs.cap1, prefs.cap2, thumbName, "",
+            ev100 = evOk, lux = if (st.mode == 3) luxOk else null,
         ))
+        if (!ok) thumbName?.let { File(store.thumbDir, it).delete() }
         bump()
     }
 

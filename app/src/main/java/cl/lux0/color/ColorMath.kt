@@ -38,7 +38,7 @@ object ColorMath {
         return hypot(u - pu, v - pv)
     }
 
-    /** CCT por mínima distancia al locus (barrido grueso en mired + sección áurea). */
+    /** CCT por mínima distancia al locus (barrido cada 10 mired + sección áurea dentro de ±10). */
     fun xyToReading(x: Double, y: Double): Reading {
         val (u, v) = xyToUv(x, y)
         val lo = mired(MAX_K)
@@ -49,10 +49,10 @@ object ColorMath {
         while (m <= hi) {
             val d = distAt(u, v, m)
             if (d < bestD) { bestD = d; best = m }
-            m += 2.0
+            m += 10.0
         }
-        var a = (best - 2.0).coerceAtLeast(lo)
-        var b = (best + 2.0).coerceAtMost(hi)
+        var a = (best - 10.0).coerceAtLeast(lo)
+        var b = (best + 10.0).coerceAtMost(hi)
         val g = 0.6180339887498949
         repeat(60) {
             val c = b - g * (b - a)

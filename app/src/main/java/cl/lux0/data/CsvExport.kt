@@ -9,8 +9,14 @@ const val CSV_HEADER =
 const val CSV_HEADER_EN =
     "date;session;source;kelvin;duv;cam1;rec1;cam2;rec2;iso1;fps1;shutter1;f1;nd1;ev1;iso2;fps2;shutter2;f2;nd2;ev2;ev100;lux;comment"
 
-private fun esc(s: String): String =
-    if (s.any { it == ';' || it == '"' || it == '\n' || it == '\r' }) "\"" + s.replace("\"", "\"\"") + "\"" else s
+/**
+ * Celda segura: entre comillas si hace falta, y con ' delante si es texto que empieza con = + - @
+ * (para que Excel o Sheets no lo ejecuten como fórmula). Los números negativos quedan igual.
+ */
+private fun esc(raw: String): String {
+    val s = if (raw.isNotEmpty() && raw[0] in "=+-@\t\r" && raw.toDoubleOrNull() == null) "'$raw" else raw
+    return if (s.any { it == ';' || it == '"' || it == '\n' || it == '\r' }) "\"" + s.replace("\"", "\"\"") + "\"" else s
+}
 
 fun toCsv(list: List<Measurement>, sessions: Map<Long, String>): String {
     val fmt = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US)

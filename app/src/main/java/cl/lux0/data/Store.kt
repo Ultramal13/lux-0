@@ -13,10 +13,14 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** Sesiones, mediciones y cámaras personalizadas en filesDir/lux0.json. */
+/**
+ * Sesiones, mediciones y cámaras personalizadas en filesDir/lux0.json (privado de la app).
+ * La escritura va a un hilo aparte; la lectura descarta solo los registros dañados.
+ */
 class Store(private val context: Context) {
     private val file = File(context.filesDir, "lux0.json")
     val thumbDir = File(context.filesDir, "thumbs").apply { mkdirs() }
+    private val writer = java.util.concurrent.Executors.newSingleThreadExecutor()
 
     private var sessions = mutableListOf<Session>()
     private var measurements = mutableListOf<Measurement>()
@@ -27,35 +31,59 @@ class Store(private val context: Context) {
 
     private fun load() {
         if (!file.exists()) return
-        try {
-            parse(JSONObject(file.readText()))
+        val o = try {
+            JSONObject(file.readText())
         } catch (e: Exception) {
-            // Archivo dañado: se respalda y se parte de cero en vez de caerse en cada arranque.
+            // Archivo ilegible: se guarda una copia con fecha y se parte de cero, sin caerse en cada arranque.
             android.util.Log.w("lux0", "lux0.json dañado", e)
-            file.copyTo(File(file.path + ".bak"), overwrite = true)
-            sessions.clear(); measurements.clear(); custom.clear(); activeId = 0L
+            try { file.copyTo(File(file.path + ".bak-" + System.currentTimeMillis()), overwrite = false) } catch (_: Exception) {}
+            return
         }
-    }
-
-    private fun parse(o: JSONObject) {
-        o.optJSONArray("sessions")?.let { a -> for (i in 0 until a.length()) sessions += Session.fromJson(a.getJSONObject(i)) }
-        o.optJSONArray("measurements")?.let { a -> for (i in 0 until a.length()) measurements += Measurement.fromJson(a.getJSONObject(i)) }
-        o.optJSONArray("custom")?.let { a -> for (i in 0 until a.length()) custom += cameraProfileFromJson(a.getJSONObject(i)) }
+        // Registro por registro: uno malo no borra los demás.
+        o.optJSONArray("sessions")?.let { arr -> for (i in 0 until arr.length()) runCatching { sessions += Session.fromJson(arr.getJSONObject(i)) } }
+        o.optJSONArray("measurements")?.let { arr -> for (i in 0 until arr.length()) runCatching { measurements += Measurement.fromJson(arr.getJSONObject(i)) } }
+        o.optJSONArray("custom")?.let { arr -> for (i in 0 until arr.length()) runCatching { custom += cameraProfileFromJson(arr.getJSONObject(i)) } }
         activeId = o.optLong("active", 0L)
+        cleanOrphanThumbs()
     }
 
+    /** Borra miniaturas que ya no pertenecen a ninguna medición. */
+    private fun cleanOrphanThumbs() {
+        val used = measurements.mapNotNull { it.thumbPath?.let { p -> File(p).name } }.toSet()
+        thumbDir.listFiles()?.forEach { if (it.name !in used) it.delete() }
+    }
+
+    /**
+     * Miniatura de una medición, siempre dentro de thumbs/ (también para rutas antiguas guardadas
+     * completas). Nunca devuelve un archivo fuera de esa carpeta.
+     */
+    fun thumbFile(m: Measurement): File? {
+        val name = m.thumbPath?.let { File(it).name }?.takeIf { it.isNotBlank() } ?: return null
+        val f = File(thumbDir, name)
+        return f.takeIf { it.canonicalPath.startsWith(thumbDir.canonicalPath + File.separator) }
+    }
+
+    /** Arma el JSON en el hilo actual y lo escribe en segundo plano (atómico, con fsync). */
     private fun persist() {
-        val o = JSONObject()
-            .put("sessions", JSONArray(sessions.map { it.toJson() }))
-            .put("measurements", JSONArray(measurements.map { it.toJson() }))
-            .put("custom", JSONArray(custom.map { it.toJson() }))
-            .put("active", activeId)
-        val tmp = File(file.path + ".tmp")
-        java.io.FileOutputStream(tmp).use { out ->
-            out.write(o.toString().toByteArray())
-            out.fd.sync()
+        val text = try {
+            JSONObject()
+                .put("sessions", JSONArray(sessions.map { it.toJson() }))
+                .put("measurements", JSONArray(measurements.map { it.toJson() }))
+                .put("custom", JSONArray(custom.map { it.toJson() }))
+                .put("active", activeId)
+                .toString()
+        } catch (e: Exception) {
+            android.util.Log.w("lux0", "no se pudo preparar el guardado", e); return
         }
-        if (!tmp.renameTo(file)) { file.writeText(o.toString()); tmp.delete() }
+        writer.execute {
+            try {
+                val tmp = File(file.path + ".tmp")
+                java.io.FileOutputStream(tmp).use { out -> out.write(text.toByteArray()); out.fd.sync() }
+                if (!tmp.renameTo(file)) { file.writeText(text); tmp.delete() }
+            } catch (e: Exception) {
+                android.util.Log.w("lux0", "no se pudo guardar", e)
+            }
+        }
     }
 
     fun sessions(): List<Session> = sessions.sortedByDescending { it.created }
@@ -72,7 +100,7 @@ class Store(private val context: Context) {
     }
 
     private fun newSessionInternal(name: String): Session {
-        val s = Session(System.currentTimeMillis(), name, System.currentTimeMillis())
+        val s = Session(System.currentTimeMillis(), name.take(80), System.currentTimeMillis())
         sessions += s
         return s
     }
@@ -86,18 +114,34 @@ class Store(private val context: Context) {
 
     fun setActive(id: Long) { activeId = id; persist() }
 
+    /** Borra una sesión con todas sus mediciones y miniaturas. */
+    fun deleteSession(id: Long) {
+        measurements.filter { it.sessionId == id }.forEach { m -> thumbFile(m)?.delete() }
+        measurements.removeAll { it.sessionId == id }
+        sessions.removeAll { it.id == id }
+        if (activeId == id) activeId = 0L
+        persist()
+    }
+
     fun measurements(sessionId: Long?): List<Measurement> =
         measurements.filter { sessionId == null || it.sessionId == sessionId }.sortedByDescending { it.time }
 
-    fun save(m: Measurement) { measurements += m; persist() }
+    /** Agrega una medición solo si todos sus números son válidos (un NaN rompería el guardado). */
+    fun save(m: Measurement): Boolean {
+        val nums = listOfNotNull(m.cct, m.duv, m.ev100, m.lux, m.cap1.fps, m.cap2.fps, m.cap1.ev, m.cap2.ev, m.cap1.fStop, m.cap2.fStop)
+        if (nums.any { !it.isFinite() }) return false
+        measurements += m
+        persist()
+        return true
+    }
 
     fun updateComment(id: Long, text: String) {
         val i = measurements.indexOfFirst { it.id == id }
-        if (i >= 0) { measurements[i] = measurements[i].copy(comment = text); persist() }
+        if (i >= 0) { measurements[i] = measurements[i].copy(comment = text.take(500)); persist() }
     }
 
     fun delete(id: Long) {
-        measurements.firstOrNull { it.id == id }?.thumbPath?.let { File(it).delete() }
+        measurements.firstOrNull { it.id == id }?.let { thumbFile(it)?.delete() }
         measurements.removeAll { it.id == id }
         persist()
     }

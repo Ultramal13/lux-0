@@ -91,6 +91,7 @@ fun HistoryPanel(vm: MeterViewModel, version: Int, modifier: Modifier) {
     var newSession by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf<Measurement?>(null) }
     var deleting by remember { mutableStateOf<Measurement?>(null) }
+    var deletingSession by remember { mutableStateOf(false) }
     val fmt = remember { SimpleDateFormat("dd/MM HH:mm", Locale.US) }
 
     Column(modifier.fillMaxWidth()) {
@@ -100,16 +101,26 @@ fun HistoryPanel(vm: MeterViewModel, version: Int, modifier: Modifier) {
                 modifier = Modifier.clip(RoundedCornerShape(7.dp)).background(p.key).clickable { newSession = true }.padding(horizontal = 10.dp, vertical = 7.dp))
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(tr("borrar sesión", "delete session"), style = mono(11, p.text),
+                modifier = Modifier.clip(RoundedCornerShape(7.dp)).background(p.key).clickable { deletingSession = true }.padding(horizontal = 8.dp, vertical = 5.dp))
+            Spacer(Modifier.width(8.dp))
             Text("${list.size} " + tr("mediciones", "readings"), style = mono(11, p.text))
             Spacer(Modifier.weight(1f))
             Text(tr("exportar csv ↗", "export csv ↗"), style = mono(12, p.accent, true), modifier = Modifier.clickable {
-                val dir = File(ctx.cacheDir, "export").apply { mkdirs() }
-                val f = File(dir, "lux0-${active.name.replace(Regex("[^a-zA-Z0-9-]"), "_")}.csv")
-                f.writeText(toCsv(vm.store.measurements(active.id), sessions.associate { it.id to it.name }))
-                val uri = FileProvider.getUriForFile(ctx, "cl.lux0.files", f)
-                ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
-                    type = "text/csv"; putExtra(Intent.EXTRA_STREAM, uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                }, tr("exportar csv", "export csv")))
+                try {
+                    // Solo se comparte este archivo; las exportaciones anteriores se borran.
+                    val dir = File(ctx.cacheDir, "export").apply { mkdirs() }
+                    dir.listFiles()?.forEach { it.delete() }
+                    val safe = active.name.replace(Regex("[^a-zA-Z0-9-]"), "_").take(60)
+                    val f = File(dir, "lux0-$safe.csv")
+                    f.writeText(toCsv(vm.store.measurements(active.id), sessions.associate { it.id to it.name }))
+                    val uri = FileProvider.getUriForFile(ctx, "cl.lux0.files", f)
+                    ctx.startActivity(Intent.createChooser(Intent(Intent.ACTION_SEND).apply {
+                        type = "text/csv"; putExtra(Intent.EXTRA_STREAM, uri); addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }, tr("exportar csv", "export csv")))
+                } catch (e: Exception) {
+                    android.widget.Toast.makeText(ctx, tr("no se pudo exportar el csv", "could not export the csv"), android.widget.Toast.LENGTH_SHORT).show()
+                }
             }.padding(6.dp))
         }
         if (list.isEmpty()) Text(tr("sin mediciones en esta sesión. mide y toca ● guardar.", "no readings in this session. measure and tap ● save."), style = mono(11, p.text), modifier = Modifier.padding(top = 12.dp))
@@ -119,7 +130,7 @@ fun HistoryPanel(vm: MeterViewModel, version: Int, modifier: Modifier) {
                     Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(p.screen)
                         .combinedClickable(onClick = { editing = m }, onLongClick = { deleting = m }).padding(8.dp),
                 ) {
-                    val bmp = remember(m.thumbPath) { m.thumbPath?.let { BitmapFactory.decodeFile(it) } }
+                    val bmp = remember(m.thumbPath) { vm.store.thumbFile(m)?.takeIf { it.exists() }?.let { BitmapFactory.decodeFile(it.path) } }
                     if (bmp != null) Image(bmp.asImageBitmap(), null, contentScale = ContentScale.Crop,
                         modifier = Modifier.size(58.dp).clip(RoundedCornerShape(6.dp)))
                     else Box(Modifier.size(58.dp).clip(RoundedCornerShape(6.dp)).background(p.screenDim))
@@ -149,6 +160,11 @@ fun HistoryPanel(vm: MeterViewModel, version: Int, modifier: Modifier) {
         Dialog(tr("comentario", "comment"), { editing = null }, tr("guardar", "save"), { vm.store.updateComment(m.id, text); editing = null; vm.bump() }) {
             Field(text, { text = it }, 260)
         }
+    }
+    if (deletingSession) {
+        Dialog(tr("¿borrar la sesión \"", "delete session \"") + active.name + tr("\" con sus ", "\" with its ") + "${list.size}" +
+            tr(" mediciones?", " readings?"), { deletingSession = false }, tr("borrar", "delete"),
+            { vm.store.deleteSession(active.id); deletingSession = false; vm.bump() }) {}
     }
     deleting?.let { m ->
         Dialog(tr("¿borrar medición de ", "delete reading of ") + "${m.cct.roundToInt()} k?", { deleting = null }, tr("borrar", "delete"), { vm.store.delete(m.id); deleting = null; vm.bump() }) {}

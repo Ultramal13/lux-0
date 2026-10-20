@@ -65,7 +65,9 @@ class MeterCamera(
     private val manager = context.getSystemService(CameraManager::class.java)
     private val thread = HandlerThread("lux0-cam").also { it.start() }
     private val handler = Handler(thread.looper)
-    private val exec = Executor { handler.post(it) }
+    // Si el hilo ya terminó (app cerrándose), el aviso se ejecuta igual: así onOpened llega, ve que la
+    // generación cambió y cierra la cámara en vez de dejarla abierta sin dueño.
+    private val exec = Executor { r -> if (!handler.post(r)) r.run() }
 
     // Solo se tocan desde el hilo de cámara.
     private var device: CameraDevice? = null
@@ -86,6 +88,11 @@ class MeterCamera(
     @Volatile var mapMode = false
     private var aeTimeNs = 10_000_000L
     private var aeIso = 400
+    /** El equipo permite exposición manual (necesario para el modo parpadeo). */
+    private var manualSensor = false
+    /** Matrices de color del sensor, leídas una vez al abrir la cámara. */
+    private class Mats(val cm1: DoubleArray, val cm2: DoubleArray, val cc1: DoubleArray, val cc2: DoubleArray, val t1: Double, val t2: Double)
+    private var mats: Mats? = null
 
     private val repeatCallback = object : CameraCaptureSession.CaptureCallback() {
         override fun onCaptureCompleted(cs: CameraCaptureSession, req: CaptureRequest, res: android.hardware.camera2.TotalCaptureResult) {
@@ -103,6 +110,9 @@ class MeterCamera(
         handler.post {
             if (flicker == on) return@post
             flicker = on
+            if (on && !manualSensor && device != null) {
+                onSample(Sample(null, tr("este teléfono no permite exposición manual", "this phone does not allow manual exposure"), null))
+            }
             history.clear()
             val d = device ?: return@post
             val pv = previewSurface ?: return@post
@@ -122,17 +132,19 @@ class MeterCamera(
         }
     }
 
-    /** Elige el tamaño 4:3 más chico ≥ 640 px para preview y análisis. */
-    fun choosePreviewSize(front: Boolean): Size {
+    /** Elige el tamaño 4:3 más chico ≥ 640 px para preview y análisis (no cambia el estado). */
+    private fun pickSize(front: Boolean): Size {
         val sizes = findCamera(front)
             ?.let { manager.getCameraCharacteristics(it).get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP) }
             ?.getOutputSizes(ImageFormat.YUV_420_888)
             ?.takeIf { it.isNotEmpty() }
-            ?: return previewSize
-        previewSize = sizes.filter { it.width * 3 == it.height * 4 && it.width >= 640 }
+            ?: return Size(640, 480)
+        return sizes.filter { it.width * 3 == it.height * 4 && it.width >= 640 }
             .minByOrNull { it.width } ?: sizes.minBy { abs(it.width - 640) }
-        return previewSize
     }
+
+    /** Proporción ancho/alto del cuadro (para recortar el visor). El ViewModel la guarda en caché. */
+    fun aspectFor(front: Boolean): Float = pickSize(front).let { it.width.toFloat() / it.height }
 
     fun start(texture: SurfaceTexture, front: Boolean) {
         if (released) return
@@ -173,8 +185,19 @@ class MeterCamera(
                 return fail(gen, tr("la cámara no entrega matrices de color", "the camera does not provide color matrices"))
             }
             chars = c
+            manualSensor = CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR in caps
+            val id3 = doubleArrayOf(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+            val cm1 = transform(c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM1))!!
+            val cc1 = transform(c.get(CameraCharacteristics.SENSOR_CALIBRATION_TRANSFORM1)) ?: id3
+            val t1 = illuminantK(c.get(CameraCharacteristics.SENSOR_REFERENCE_ILLUMINANT1))
+            mats = Mats(
+                cm1, transform(c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM2)) ?: cm1,
+                cc1, transform(c.get(CameraCharacteristics.SENSOR_CALIBRATION_TRANSFORM2)) ?: cc1,
+                t1, c.get(CameraCharacteristics.SENSOR_REFERENCE_ILLUMINANT2)?.toInt()?.let { illuminantK(it) } ?: t1,
+            )
             history.clear()
-            val size = choosePreviewSize(front)
+            val size = pickSize(front)
+            previewSize = size
             reader = ImageReader.newInstance(size.width, size.height, ImageFormat.YUV_420_888, 2).apply {
                 setOnImageAvailableListener({ r ->
                     val img = try { r.acquireLatestImage() } catch (e: IllegalStateException) { null }
@@ -262,15 +285,26 @@ class MeterCamera(
             0, 1, 0, 1, 1, 1,
         )))
         b.set(CaptureRequest.CONTROL_EFFECT_MODE, CaptureRequest.CONTROL_EFFECT_MODE_OFF)
-        if (flicker) {
-            // 1/2000 s con el ISO subido para mantener el brillo que eligió el AE.
-            val shortNs = 500_000L
-            val range = c.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)
-            val iso = (aeIso * aeTimeNs.toDouble() / shortNs).toInt().let { range?.clamp(it) ?: it }
+        if (flicker && manualSensor) {
+            // 1/2000 s (dentro del rango del equipo) con el ISO subido para mantener el brillo del AE.
+            val expRange = c.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE)
+            val shortNs = expRange?.clamp(500_000L) ?: 500_000L
+            val isoRange = c.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)
+            val iso = (aeIso * aeTimeNs.toDouble() / shortNs).toInt().let { isoRange?.clamp(it) ?: it }
+            // Con AE apagado no rige el rango de fps: se fija la duración de cuadro (≥ 1/15 s) para no
+            // trabajar más rápido que en los otros modos.
+            val map = c.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+            val minDur = maxOf(
+                map?.getOutputMinFrameDuration(ImageFormat.YUV_420_888, previewSize) ?: 0L,
+                map?.getOutputMinFrameDuration(SurfaceTexture::class.java, previewSize) ?: 0L,
+            )
+            val maxDur = c.get(CameraCharacteristics.SENSOR_INFO_MAX_FRAME_DURATION) ?: Long.MAX_VALUE
+            val frameNs = maxOf(66_666_667L, minDur).coerceAtMost(maxDur)
             b.set(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_OFF)
             b.set(CaptureRequest.CONTROL_AE_ANTIBANDING_MODE, CaptureRequest.CONTROL_AE_ANTIBANDING_MODE_OFF)
             b.set(CaptureRequest.SENSOR_EXPOSURE_TIME, shortNs)
             b.set(CaptureRequest.SENSOR_SENSITIVITY, iso)
+            b.set(CaptureRequest.SENSOR_FRAME_DURATION, frameNs)
         }
         val tm = c.get(CameraCharacteristics.TONEMAP_AVAILABLE_TONE_MAP_MODES) ?: intArrayOf()
         if (CaptureRequest.TONEMAP_MODE_GAMMA_VALUE in tm) {
@@ -299,10 +333,11 @@ class MeterCamera(
     private fun maybeProcess(img: Image, gen: Int) {
         if (gen != generation) return
         val now = SystemClock.elapsedRealtime()
-        if (now - lastProcessed < intervalMs) return
+        // El parpadeo es el cálculo más pesado: como mínimo una vez por segundo.
+        if (now - lastProcessed < (if (flicker) maxOf(intervalMs, 1000L) else intervalMs)) return
         lastProcessed = now
         val c = chars ?: return
-        if (flicker) { processFlicker(img); return }
+        if (flicker) { if (manualSensor) processFlicker(img); return }
         try {
             val p = img.planes
             val roi = computeRoiYuv(
@@ -314,14 +349,8 @@ class MeterCamera(
             val ev = phoneEv100(c)
             val warn = roi.warning()
             if (warn != null || roi.g <= 0.001) { onSample(Sample(null, warn ?: tr("sin señal", "no signal"), roi, ev)); return }
-            val cm1 = transform(c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM1))!!
-            val cm2 = transform(c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM2)) ?: cm1
-            val id = doubleArrayOf(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
-            val cc1 = transform(c.get(CameraCharacteristics.SENSOR_CALIBRATION_TRANSFORM1)) ?: id
-            val cc2 = transform(c.get(CameraCharacteristics.SENSOR_CALIBRATION_TRANSFORM2)) ?: cc1
-            val t1 = illuminantK(c.get(CameraCharacteristics.SENSOR_REFERENCE_ILLUMINANT1))
-            val t2 = c.get(CameraCharacteristics.SENSOR_REFERENCE_ILLUMINANT2)?.toInt()?.let { illuminantK(it) } ?: t1
-            val toXy = { rr: RoiResult -> ColorMath.cameraNeutralToXy(doubleArrayOf(rr.r / rr.g, 1.0, rr.b / rr.g), cm1, cm2, cc1, cc2, t1, t2) }
+            val m = mats ?: return
+            val toXy = { rr: RoiResult -> ColorMath.cameraNeutralToXy(doubleArrayOf(rr.r / rr.g, 1.0, rr.b / rr.g), m.cm1, m.cm2, m.cc1, m.cc2, m.t1, m.t2) }
             val map = if (mapMode) buildMap(p, img.width, img.height, c, toXy) else null
             val xy = toXy(roi)
             if (xy.first.isNaN() || xy.second.isNaN()) { onSample(Sample(null, tr("no se pudo calcular", "could not compute"), roi, ev, map = map)); return }

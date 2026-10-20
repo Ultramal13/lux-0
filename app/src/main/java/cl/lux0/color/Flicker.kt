@@ -26,19 +26,51 @@ object Flicker {
         val mean = rows.average()
         if (mean <= 1e-6) return null
         // Ajuste conjunto por mínimos cuadrados: tendencia cuadrática (viñeteo, degradados) + onda a la
-        // frecuencia probada. Así la tendencia no "se come" la onda cuando el cuadro cubre pocos ciclos.
-        val x = DoubleArray(n) { (it - n / 2.0) / n }
-        var bestHz = 0.0; var bestAmp = 0.0; var bestRes = Double.MAX_VALUE
-        var f = 60.0
-        while (f <= 1000.0) {
+        // frecuencia probada, para que la tendencia no "se coma" la onda con pocos ciclos en el cuadro.
+        // Lo que no depende de la frecuencia se calcula una vez; seno y coseno van por recurrencia.
+        val t0 = DoubleArray(n) { 1.0 }
+        val t1 = DoubleArray(n) { (it - n / 2.0) / n }
+        val t2 = DoubleArray(n) { t1[it] * t1[it] }
+        val trend = arrayOf(t0, t1, t2)
+        val gram = Array(3) { a -> DoubleArray(3) { b -> dot(trend[a], trend[b]) } }
+        val ty = DoubleArray(3) { dot(trend[it], rows) }
+        val yy = dot(rows, rows)
+        val m = Array(5) { DoubleArray(6) }
+        val trendSin = DoubleArray(3); val trendCos = DoubleArray(3)
+
+        fun evaluate(f: Double): Pair<Double, Double>? {
             val w = 2 * PI * f * rowTimeSec
-            val fit = fit(n) { i -> doubleArrayOf(1.0, x[i], x[i] * x[i], sin(w * i), cos(w * i)) }.let { it(rows) }
-            if (fit != null && fit.second < bestRes) {
-                bestRes = fit.second; bestHz = f
-                bestAmp = sqrt(fit.first[3] * fit.first[3] + fit.first[4] * fit.first[4])
+            val cw = cos(w); val sw = sin(w)
+            var s = 0.0; var c = 1.0
+            var ss = 0.0; var cc = 0.0; var sc = 0.0; var ys = 0.0; var yc = 0.0
+            trendSin.fill(0.0); trendCos.fill(0.0)
+            for (i in 0 until n) {
+                ss += s * s; cc += c * c; sc += s * c; ys += rows[i] * s; yc += rows[i] * c
+                for (k in 0..2) { trendSin[k] += trend[k][i] * s; trendCos[k] += trend[k][i] * c }
+                val ns = s * cw + c * sw; c = c * cw - s * sw; s = ns
             }
-            f += 1.0
+            for (r in 0..2) { for (k in 0..2) m[r][k] = gram[r][k]; m[r][3] = trendSin[r]; m[r][4] = trendCos[r]; m[r][5] = ty[r] }
+            for (k in 0..2) { m[3][k] = trendSin[k]; m[4][k] = trendCos[k] }
+            m[3][3] = ss; m[3][4] = sc; m[3][5] = ys
+            m[4][3] = sc; m[4][4] = cc; m[4][5] = yc
+            val rhs = DoubleArray(5) { m[it][5] }
+            val coef = solve(m) ?: return null
+            // Error cuadrático de la solución de mínimos cuadrados: yᵀy − coefᵀ·(Aᵀy).
+            var explained = 0.0
+            for (k in 0 until 5) explained += coef[k] * rhs[k]
+            return (yy - explained) to sqrt(coef[3] * coef[3] + coef[4] * coef[4])
         }
+
+        var bestHz = 0.0; var bestAmp = 0.0; var bestRes = Double.MAX_VALUE
+        fun scan(from: Double, to: Double, step: Double) {
+            var f = from
+            while (f <= to) {
+                evaluate(f)?.let { (res, amp) -> if (res < bestRes) { bestRes = res; bestHz = f; bestAmp = amp } }
+                f += step
+            }
+        }
+        scan(60.0, 1000.0, 5.0)                                          // búsqueda gruesa
+        scan(maxOf(60.0, bestHz - 5), minOf(1000.0, bestHz + 5), 0.5)    // refinamiento
         val depth = 2 * bestAmp / mean
         if (depth < minDepth) return null
         // Las luces de red parpadean a 100 o 120 Hz: si está cerca, se informa el valor exacto.
@@ -46,23 +78,9 @@ object Flicker {
         return Result(snapped, depth)
     }
 
-    /** Mínimos cuadrados con una base por fila; devuelve (coeficientes, error cuadrático). */
-    private fun fit(n: Int, basis: (Int) -> DoubleArray): (DoubleArray) -> Pair<DoubleArray, Double>? = { y ->
-        val k = 5
-        val m = Array(k) { DoubleArray(k + 1) }
-        val rowsB = Array(n) { basis(it) }
-        for (i in 0 until n) {
-            val p = rowsB[i]
-            for (a in 0 until k) { m[a][k] += p[a] * y[i]; for (b in 0 until k) m[a][b] += p[a] * p[b] }
-        }
-        solve(m)?.let { c ->
-            var res = 0.0
-            for (i in 0 until n) { var e = y[i]; for (a in 0 until k) e -= c[a] * rowsB[i][a]; res += e * e }
-            c to res
-        }
-    }
+    private fun dot(a: DoubleArray, b: DoubleArray): Double { var s = 0.0; for (i in a.indices) s += a[i] * b[i]; return s }
 
-    /** Eliminación gaussiana con pivoteo sobre una matriz aumentada k×(k+1). */
+    /** Eliminación gaussiana con pivoteo sobre una matriz aumentada k×(k+1) (se modifica en el lugar). */
     private fun solve(m: Array<DoubleArray>): DoubleArray? {
         val k = m.size
         for (col in 0 until k) {

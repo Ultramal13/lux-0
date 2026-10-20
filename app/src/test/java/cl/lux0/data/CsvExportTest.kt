@@ -31,4 +31,11 @@ class CsvExportTest {
         assertEquals(CSV_HEADER_EN, toCsv(emptyList(), emptyMap()).lines()[0])
         cl.lux0.I18n.force = "es"
     }
+
+    @Test fun formulasAreNeutralized() {
+        val row = toCsv(listOf(m("=HYPERLINK(\"x\")")), mapOf(7L to "+sesion")).lines()[1]
+        assertTrue(row.contains(";'+sesion;"))
+        assertTrue(row.endsWith(";\"'=HYPERLINK(\"\"x\"\")\""))
+        assertTrue(row.contains(";-0.0050;"))   // los números negativos no se tocan
+    }
 }

@@ -4,6 +4,9 @@
     <uses-feature android:name="android.hardware.camera" android:required="true" />
     <application
         android:label="LUX-0"
+        android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher"
         android:theme="@android:style/Theme.Material.NoActionBar">
