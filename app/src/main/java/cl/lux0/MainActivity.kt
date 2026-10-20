@@ -99,15 +99,17 @@ fun App(vm: MeterViewModel = viewModel()) {
             Header(st.mode, st.theme, vm::cycleTheme) { vm.setMode(10) }
             val meter = st.mode == 1 || st.mode == 9
             if (meter) {
-                if (granted) BlackScreen(vm, st) { textureView = it }
-                else Box(Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(14.dp)).background(palette.screen).padding(16.dp)) {
+                val fill = st.mode == 1
+                // En color la pantalla negra se estira (el visor llena el espacio libre); en calibración no.
+                val screenMod = if (fill) Modifier.weight(1f) else Modifier
+                if (granted) BlackScreen(vm, st, screenMod, fill) { textureView = it }
+                else Box(screenMod.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(14.dp)).background(palette.screen).padding(16.dp)) {
                     Text(tr("lux-0 necesita la cámara para medir.\nvuelve a abrir la app para dar el permiso.", "lux-0 needs the camera to measure.\nreopen the app to grant permission."), style = mono(13, palette.screenText))
                 }
-                if (st.mode == 1) Column(Modifier.weight(1f).verticalScroll(rememberScrollState())) {
+                if (fill) {
                     SourceRow(st, vm::setSource)
                     CameraCards(vm, st.version)
-                }
-                else Box(Modifier.weight(1f)) { CalibrationPanel(vm, st) }
+                } else Box(Modifier.weight(1f)) { CalibrationPanel(vm, st) }
             } else if (st.mode == 10) {
                 HelpPanel(Modifier.weight(1f))
             } else if (st.mode == 7) {

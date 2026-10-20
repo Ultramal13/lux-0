@@ -31,7 +31,7 @@ private val HELP_ES = listOf(
         "⚠ = la luz tiene tinte y esa cámara no lo puede corregir.",
     "visor" to
         "es solo para apuntar: la medición usa su propia imagen y promedia lo que está dentro del círculo. " +
-        "toca el visor para ampliarlo a media pantalla y otra vez para achicarlo. está en gris a propósito: " +
+        "ocupa todo el espacio libre de la pantalla para apuntar cómodo. está en gris a propósito: " +
         "la imagen va sin corrección de color para medir bien y en color se vería verdosa.",
     "fuente de medición" to
         "blanco/gris: apunta el círculo a una hoja blanca o tarjeta gris bajo la luz (lo más preciso). " +
@@ -92,7 +92,7 @@ private val HELP_EN = listOf(
         "⚠ = the light has a tint this camera cannot correct.",
     "viewfinder" to
         "it is only for aiming: the measurement uses its own image and averages what is inside the circle. " +
-        "tap the viewfinder to enlarge it to half the screen, and again to shrink it. it is gray on purpose: " +
+        "it fills all the free space on screen so aiming is easy. it is gray on purpose: " +
         "the image has no color correction so it can measure correctly, and in color it would look greenish.",
     "measuring source" to
         "white/gray: aim the circle at a white sheet or gray card under the light (most accurate). " +

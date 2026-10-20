@@ -82,11 +82,9 @@ fun Header(mode: Int, theme: String, onTheme: () -> Unit, onHelp: () -> Unit = {
 @Composable
 fun Viewfinder(
     vm: MeterViewModel,
-    width: androidx.compose.ui.unit.Dp,
-    height: androidx.compose.ui.unit.Dp,
+    modifier: Modifier,
     active: Boolean,
     retry: Int,
-    onToggle: () -> Unit,
     overlay: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {},
     onView: (TextureView?) -> Unit,
 ) {
@@ -107,7 +105,7 @@ fun Viewfinder(
     LaunchedEffect(run, texture, retry) {
         if (run) vm.startCamera(texture!!) else vm.stopCamera()
     }
-    Box(Modifier.size(width, height).clip(RoundedCornerShape(8.dp)).background(p.screenDim).clickable(onClick = onToggle)) {
+    Box(modifier.clip(RoundedCornerShape(8.dp)).background(p.screenDim)) {
         AndroidView(
             factory = { ctx ->
                 TextureView(ctx).apply {
@@ -222,10 +220,10 @@ private fun tintText(duv: Double): String {
 }
 
 @Composable
-fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit) {
+fun BlackScreen(vm: MeterViewModel, st: UiState, modifier: Modifier = Modifier, fill: Boolean = false, onView: (TextureView?) -> Unit) {
     val p = LocalPalette.current
     val r: Reading? = st.reading
-    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(p.screen).padding(12.dp)) {
+    Column(modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(p.screen).padding(12.dp)) {
         Row {
             Text("${SOURCES[st.source]} · ${vm.prefs.reflectance}%", style = mono(10, p.screenDim))
             Spacer(Modifier.weight(1f))
@@ -240,38 +238,36 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
             Text(status, style = mono(10, p.accent))
         }
         Spacer(Modifier.height(8.dp))
-        // Un toque en el visor lo amplía: todo el ancho y ~¼ de la altura de pantalla, con el número encima,
-        // para que fuente y tarjetas de cámara sigan visibles. Otro toque lo achica.
-        // El visor queda siempre en la misma posición del árbol para que la cámara no se reinicie.
-        var big by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
-        val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val vfW by androidx.compose.animation.core.animateDpAsState(if (big) maxWidth else 132.dp, label = "visor-ancho")
-            val vfH by androidx.compose.animation.core.animateDpAsState(if (big) (screenH * 0.26f).dp else 132.dp, label = "visor-alto")
-            val reading: @Composable (Int) -> Unit = { size ->
-                Column {
-                    Row(verticalAlignment = Alignment.Bottom) {
-                        Text(r?.let { "${it.cct.roundToInt()}" } ?: "----", style = mono(size, p.screenText, true))
-                        if (big) Text(" k", style = mono(16, p.screenDim))
-                    }
-                    if (!big) Text("k" + if (st.source == 2) tr("  ≈ estimado", "  ≈ estimated") else "", style = mono(13, p.screenDim))
-                    if (!big) Spacer(Modifier.height(4.dp))
-                    Text(r?.let { tintText(it.duv) } ?: "", style = mono(12, if (r != null && r.duv > 0) p.green else p.magenta))
-                    Text(
-                        (if (st.calOffset == 0.0) tr("sin calibrar", "uncalibrated") else tr("calibrado", "calibrated")) +
-                            if (big && st.source == 2) tr(" · ≈ estimado", " · ≈ estimated") else "",
-                        style = mono(9, p.screenDim),
-                    )
+        // En la pantalla de color el visor es fijo: todo el ancho y el alto libre, con el número encima.
+        // En calibración queda chico (132 dp) con el número al lado, para dejar espacio al panel.
+        val reading: @Composable (Int) -> Unit = { size ->
+            Column {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(r?.let { "${it.cct.roundToInt()}" } ?: "----", style = mono(size, p.screenText, true))
+                    if (fill) Text(" k", style = mono(16, p.screenDim))
                 }
+                if (!fill) Text("k" + if (st.source == 2) tr("  ≈ estimado", "  ≈ estimated") else "", style = mono(13, p.screenDim))
+                if (!fill) Spacer(Modifier.height(4.dp))
+                Text(r?.let { tintText(it.duv) } ?: "", style = mono(12, if (r != null && r.duv > 0) p.green else p.magenta))
+                Text(
+                    (if (st.calOffset == 0.0) tr("sin calibrar", "uncalibrated") else tr("calibrado", "calibrated")) +
+                        if (fill && st.source == 2) tr(" · ≈ estimado", " · ≈ estimated") else "",
+                    style = mono(9, p.screenDim),
+                )
             }
+        }
+        val active = !st.idle && !st.hot && !st.hold
+        if (fill) {
+            Viewfinder(vm, Modifier.fillMaxWidth().weight(1f), active, st.retry, overlay = {
+                Box(
+                    Modifier.align(Alignment.BottomStart).padding(6.dp).clip(RoundedCornerShape(6.dp))
+                        .background(p.screen.copy(alpha = 0.7f)).padding(horizontal = 8.dp, vertical = 4.dp),
+                ) { reading(36) }
+            }, onView = onView)
+        } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Viewfinder(vm, vfW, vfH, !st.idle && !st.hot && !st.hold, st.retry, { big = !big }, overlay = {
-                    if (big) Box(
-                        Modifier.align(Alignment.BottomStart).padding(6.dp).clip(RoundedCornerShape(6.dp))
-                            .background(p.screen.copy(alpha = 0.7f)).padding(horizontal = 8.dp, vertical = 4.dp),
-                    ) { reading(36) }
-                }, onView = onView)
-                if (!big) { Spacer(Modifier.width(12.dp)); reading(44) }
+                Viewfinder(vm, Modifier.size(132.dp), active, st.retry, onView = onView)
+                Spacer(Modifier.width(12.dp)); reading(44)
             }
         }
         val alert = when {
