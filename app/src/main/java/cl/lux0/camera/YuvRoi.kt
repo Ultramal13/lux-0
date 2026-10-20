@@ -10,12 +10,25 @@ data class RoiResult(
     val b: Double,
     val clippedFraction: Double,
     val meanLevel: Double,
+    /** Promedio solo de lo no quemado (para escena). */
+    val rClean: Double = r,
+    val gClean: Double = g,
+    val bClean: Double = b,
 )
 
 fun RoiResult.warning(): String? = when {
     clippedFraction >= 0.02 -> tr("zona quemada", "clipped area")
     meanLevel < 0.02 -> tr("muy oscuro", "too dark")
     else -> null
+}
+
+/**
+ * Escena: una lámpara o ventana dentro del círculo no debe anular la medición. Se mide con lo que no
+ * está quemado, si es al menos la mitad del círculo; si no, null.
+ */
+fun RoiResult.withoutClipped(): RoiResult? {
+    if (clippedFraction >= 0.5) return null
+    return RoiResult(rClean, gClean, bClean, 0.0, (rClean + gClean + bClean) / 3)
 }
 
 /** Un plano de YUV_420_888 tal como lo entrega Image.Plane. */
@@ -30,6 +43,7 @@ fun computeRoiYuv(y: Plane, u: Plane, v: Plane, width: Int, height: Int, radius:
     val r2 = radius * radius
     var sr = 0.0; var sg = 0.0; var sb = 0.0
     var n = 0; var clipped = 0
+    var cr = 0.0; var cg = 0.0; var cb = 0.0
     var py = cy - radius
     while (py <= cy + radius) {
         if (py in 0 until height) {
@@ -44,6 +58,7 @@ fun computeRoiYuv(y: Plane, u: Plane, v: Plane, width: Int, height: Int, radius:
                     val gg = yy - 0.344136 * cu - 0.714136 * cv
                     val bb = yy + 1.772 * cu
                     if (yy >= 250 || rr >= 254 || gg >= 254 || bb >= 254) clipped++
+                    else { cr += rr; cg += gg; cb += bb }
                     sr += rr; sg += gg; sb += bb; n++
                 }
                 px += 2
@@ -55,7 +70,9 @@ fun computeRoiYuv(y: Plane, u: Plane, v: Plane, width: Int, height: Int, radius:
     val r = (sr / n / 255).coerceAtLeast(0.0)
     val g = (sg / n / 255).coerceAtLeast(0.0)
     val b = (sb / n / 255).coerceAtLeast(0.0)
-    return RoiResult(r, g, b, clipped.toDouble() / n, (r + g + b) / 3)
+    val m = (n - clipped).coerceAtLeast(1)
+    return RoiResult(r, g, b, clipped.toDouble() / n, (r + g + b) / 3,
+        (cr / m / 255).coerceAtLeast(0.0), (cg / m / 255).coerceAtLeast(0.0), (cb / m / 255).coerceAtLeast(0.0))
 }
 
 /** Promedio de un rectángulo del cuadro (para las celdas del mapa), con paso de muestreo. */

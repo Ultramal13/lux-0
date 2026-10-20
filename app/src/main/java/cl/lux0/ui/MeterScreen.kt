@@ -438,7 +438,8 @@ fun AssistPanel(vm: MeterViewModel, version: Int) {
             else -> "normal"
         }
     }
-    Column(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp)) {
+    // Las opciones viven en prefs (no son estado de Compose): key(version) obliga a redibujar al elegir.
+    androidx.compose.runtime.key(version) { Column(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp)) {
         Text(tr("asistente de exposición", "exposure assistant"), style = mono(11, p.text))
         androidx.compose.foundation.layout.FlowRow(
             Modifier.padding(top = 5.dp),
@@ -466,7 +467,7 @@ fun AssistPanel(vm: MeterViewModel, version: Int) {
             Text(tr("elige el diafragma en la tarjeta para la combinación completa", "pick the aperture in the card for the full combination"),
                 style = mono(9, p.text.copy(alpha = 0.6f)), modifier = Modifier.padding(top = 3.dp))
         }
-    }
+    } }
 }
 
 /** Modo lux: sensor de luz frontal; la cámara queda apagada. */

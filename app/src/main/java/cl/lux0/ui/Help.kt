@@ -36,7 +36,7 @@ private val HELP_ES = listOf(
     "fuente de medición" to
         "blanco/gris: apunta el círculo a una hoja blanca o tarjeta gris bajo la luz (lo más preciso). " +
         "difusor→luz: pon un papel o difusor blanco sobre el lente y apunta hacia la luz desde donde está el sujeto. " +
-        "escena ≈: sin referencia; solo estimado (±500 k o más) porque depende del color de lo que mires.",
+        "escena ≈: sin referencia; solo estimado (±500 k o más) porque depende del color de lo que mires. si hay una lámpara o ventana quemada en el círculo, se ignora y se mide con el resto.",
     "avisos" to
         "zona quemada: el círculo está demasiado brillante, aléjate o cambia el ángulo. " +
         "muy oscuro: falta luz en el círculo. no parece neutro: lo que apuntas tiene color propio o la luz está muy teñida.",
@@ -133,7 +133,7 @@ private val HELP_EN = listOf(
     "measuring source" to
         "white/gray: aim the circle at a white sheet or gray card under the light (most accurate). " +
         "diffuser→light: put white paper or a diffuser over the lens and point it at the light from the subject's position. " +
-        "scene ≈: no reference; only an estimate (±500 k or more) because it depends on the color of what you aim at.",
+        "scene ≈: no reference; only an estimate (±500 k or more) because it depends on the color of what you aim at. a clipped lamp or window in the circle is ignored and the rest is measured.",
     "warnings" to
         "clipped area: the circle is too bright, step back or change the angle. too dark: not enough light in the circle. " +
         "not neutral: what you aim at has its own color, or the light is strongly tinted.",

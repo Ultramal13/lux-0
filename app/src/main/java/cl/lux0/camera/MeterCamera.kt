@@ -86,6 +86,8 @@ class MeterCamera(
     @Volatile private var flicker = false
     /** Modo mapa: además del círculo, calcula la temperatura de una grilla de 8×6 celdas. */
     @Volatile var mapMode = false
+    /** Fuente "escena": lo quemado (lámparas, ventanas) se ignora en vez de anular la medición. */
+    @Volatile var sceneSource = false
     private var aeTimeNs = 10_000_000L
     private var aeIso = 400
     /** El equipo permite exposición manual (necesario para el modo parpadeo). */
@@ -340,12 +342,14 @@ class MeterCamera(
         if (flicker) { if (manualSensor) processFlicker(img); return }
         try {
             val p = img.planes
-            val roi = computeRoiYuv(
+            val raw = computeRoiYuv(
                 Plane(p[0].buffer, p[0].rowStride, p[0].pixelStride),
                 Plane(p[1].buffer, p[1].rowStride, p[1].pixelStride),
                 Plane(p[2].buffer, p[2].rowStride, p[2].pixelStride),
                 img.width, img.height, (minOf(img.width, img.height) * ROI_FRACTION).toInt().coerceAtLeast(8),
             )
+            val clipIgnored = sceneSource && raw.warning() != null && raw.clippedFraction >= 0.02
+            val roi = if (clipIgnored) raw.withoutClipped() ?: raw else raw
             val ev = phoneEv100(c)
             val warn = roi.warning()
             if (warn != null || roi.g <= 0.001) { onSample(Sample(null, warn ?: tr("sin señal", "no signal"), roi, ev)); return }
@@ -360,6 +364,7 @@ class MeterCamera(
             val warning = when {
                 r.outOfRange -> tr("fuera de rango (1000–20000 k)", "out of range (1000–20000 k)")
                 abs(r.duv) > 0.02 -> tr("no parece neutro o luz muy teñida", "not neutral, or strongly tinted light")
+                clipIgnored -> tr("zona quemada ignorada", "clipped area ignored")
                 else -> null
             }
             onSample(Sample(r.copy(cct = Calibration.apply(r.cct, calOffsetMired)), warning, roi, ev, map = map))

@@ -186,6 +186,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
         if (IS_EMULATOR) return
         onThermal(power.currentThermalStatus)
         camera.calOffsetMired = prefs.calOffsetMired
+        camera.sceneSource = _state.value.source == 2
         camera.start(texture, prefs.frontCamera)
     }
 
@@ -255,8 +256,11 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     }
     /** Hold congela la lectura y apaga la cámara (el visor la vuelve a encender al soltar). */
     fun toggleHold() = _state.update { it.copy(hold = !it.hold) }
-    fun stepSource(d: Int) = _state.update { it.copy(source = (it.source + d).mod(SOURCES.size)) }
-    fun setSource(i: Int) = _state.update { it.copy(source = i) }
+    fun stepSource(d: Int) = setSource((_state.value.source + d).mod(SOURCES.size))
+    fun setSource(i: Int) {
+        _state.update { it.copy(source = i) }
+        camera.sceneSource = i == 2
+    }
 
     fun cycleTheme() {
         val order = listOf("auto", "claro", "oscuro", "rojo")
