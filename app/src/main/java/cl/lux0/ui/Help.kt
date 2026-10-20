@@ -29,6 +29,10 @@ private val HELP_ES = listOf(
         "4700 = valor sugerido, ya redondeado a los pasos de esa cámara. " +
         "≈g2 = en canon, wb shift 2 pasos hacia verde para compensar una luz magenta (≈ porque la equivalencia es aproximada). " +
         "⚠ = la luz tiene tinte y esa cámara no lo puede corregir.",
+    "visor" to
+        "es solo para apuntar: la medición usa su propia imagen y promedia lo que está dentro del círculo. " +
+        "toca el visor para ampliarlo a media pantalla y otra vez para achicarlo. está en gris a propósito: " +
+        "la imagen va sin corrección de color para medir bien y en color se vería verdosa.",
     "fuente de medición" to
         "blanco/gris: apunta el círculo a una hoja blanca o tarjeta gris bajo la luz (lo más preciso). " +
         "difusor→luz: pon un papel o difusor blanco sobre el lente y apunta hacia la luz desde donde está el sujeto. " +
@@ -86,6 +90,10 @@ private val HELP_EN = listOf(
         "4700 = suggested value, already rounded to that camera's steps. " +
         "≈g2 = on canon, wb shift 2 steps toward green to compensate magenta light (≈ because the equivalence is approximate). " +
         "⚠ = the light has a tint this camera cannot correct.",
+    "viewfinder" to
+        "it is only for aiming: the measurement uses its own image and averages what is inside the circle. " +
+        "tap the viewfinder to enlarge it to half the screen, and again to shrink it. it is gray on purpose: " +
+        "the image has no color correction so it can measure correctly, and in color it would look greenish.",
     "measuring source" to
         "white/gray: aim the circle at a white sheet or gray card under the light (most accurate). " +
         "diffuser→light: put white paper or a diffuser over the lens and point it at the light from the subject's position. " +

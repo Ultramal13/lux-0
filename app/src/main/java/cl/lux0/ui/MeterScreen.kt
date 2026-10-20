@@ -80,7 +80,7 @@ fun Header(mode: Int, theme: String, onTheme: () -> Unit, onHelp: () -> Unit = {
  * pausa por inactividad ni por calor.
  */
 @Composable
-fun Viewfinder(vm: MeterViewModel, size: Int, active: Boolean, retry: Int, onView: (TextureView?) -> Unit) {
+fun Viewfinder(vm: MeterViewModel, size: androidx.compose.ui.unit.Dp, active: Boolean, retry: Int, onToggle: () -> Unit, onView: (TextureView?) -> Unit) {
     val p = LocalPalette.current
     val owner = LocalLifecycleOwner.current
     var texture by remember { mutableStateOf<SurfaceTexture?>(null) }
@@ -98,7 +98,7 @@ fun Viewfinder(vm: MeterViewModel, size: Int, active: Boolean, retry: Int, onVie
     LaunchedEffect(run, texture, retry) {
         if (run) vm.startCamera(texture!!) else vm.stopCamera()
     }
-    Box(Modifier.size(size.dp).clip(RoundedCornerShape(8.dp)).background(p.screenDim)) {
+    Box(Modifier.size(size).clip(RoundedCornerShape(8.dp)).background(p.screenDim).clickable(onClick = onToggle)) {
         AndroidView(
             factory = { ctx ->
                 TextureView(ctx).apply {
@@ -230,15 +230,33 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
             Text(status, style = mono(10, p.accent))
         }
         Spacer(Modifier.height(8.dp))
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Viewfinder(vm, 132, !st.idle && !st.hot && !st.hold, st.retry, onView)
-            Spacer(Modifier.width(12.dp))
+        // Un toque en el visor lo amplía al ancho de la pantalla negra (media pantalla) y otro lo achica.
+        // El visor queda siempre en la misma posición del árbol para que la cámara no se reinicie.
+        var big by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val vf by androidx.compose.animation.core.animateDpAsState(if (big) maxWidth else 132.dp, label = "visor")
+            val reading: @Composable (Int) -> Unit = { size ->
+                Column {
+                    Row(verticalAlignment = Alignment.Bottom) {
+                        Text(r?.let { "${it.cct.roundToInt()}" } ?: "----", style = mono(size, p.screenText, true))
+                        if (big) Text(" k", style = mono(18, p.screenDim))
+                    }
+                    if (!big) Text("k" + if (st.source == 2) tr("  ≈ estimado", "  ≈ estimated") else "", style = mono(13, p.screenDim))
+                    Spacer(Modifier.height(4.dp))
+                    Text(r?.let { tintText(it.duv) } ?: "", style = mono(12, if (r != null && r.duv > 0) p.green else p.magenta))
+                    Text(
+                        (if (st.calOffset == 0.0) tr("sin calibrar", "uncalibrated") else tr("calibrado", "calibrated")) +
+                            if (big && st.source == 2) tr(" · ≈ estimado", " · ≈ estimated") else "",
+                        style = mono(9, p.screenDim),
+                    )
+                }
+            }
             Column {
-                Text(r?.let { "${it.cct.roundToInt()}" } ?: "----", style = mono(44, p.screenText, true))
-                Text("k" + if (st.source == 2) tr("  ≈ estimado", "  ≈ estimated") else "", style = mono(13, p.screenDim))
-                Spacer(Modifier.height(4.dp))
-                Text(r?.let { tintText(it.duv) } ?: "", style = mono(12, if (r != null && r.duv > 0) p.green else p.magenta))
-                Text(if (st.calOffset == 0.0) tr("sin calibrar", "uncalibrated") else tr("calibrado", "calibrated"), style = mono(9, p.screenDim))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Viewfinder(vm, vf, !st.idle && !st.hot && !st.hold, st.retry, { big = !big }, onView)
+                    if (!big) { Spacer(Modifier.width(12.dp)); reading(44) }
+                }
+                if (big) Box(Modifier.padding(top = 10.dp)) { reading(56) }
             }
         }
         val alert = when {
