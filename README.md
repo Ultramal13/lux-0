@@ -8,7 +8,7 @@
 
 **Medidor de luz para foto y video, para Android.** Usa la cámara y el sensor de luz del celular para medir **temperatura de color (Kelvin), tinte, exposición, lux y parpadeo**. Te dice qué poner en **tus cámaras**: balance de blancos, diafragma y obturación segura.
 
-> **Beta pública v0.2.1 — buscamos betatesters.** 🧪
+> **Beta pública v0.3.0 — buscamos betatesters.** 🧪
 > Todas las herramientas funcionan y están probadas en un Samsung Galaxy S26 Ultra. Necesitamos probarla en **más teléfonos y más luces** para validar la precisión.
 > La app está en **español e inglés** y usa el idioma del teléfono.
 
@@ -16,7 +16,7 @@
 
 ## Instalar la beta
 
-1. Entra a **[Releases](https://github.com/Ultramal13/lux-0/releases)** y descarga el APK más reciente (`LUX-0-v0.2.1-beta.apk`).
+1. Entra a **[Releases](https://github.com/Ultramal13/lux-0/releases)** y descarga el APK más reciente (`LUX-0-v0.3.0-beta.apk`).
 2. Ábrelo en tu Android. Si el teléfono lo pide, permite **"instalar apps desconocidas"** para tu navegador o administrador de archivos.
 3. Abre LUX-0 y acepta el permiso de **cámara**, que es el único que pide.
 
@@ -45,7 +45,7 @@
 | Tecla | Herramienta | Qué hace |
 |---|---|---|
 | **1 · K** | **Color** | Kelvin y tinte en vivo. Apuntas el círculo a una hoja blanca o tarjeta gris, o usas un difusor. Te da el valor exacto para **Cámara 1 y Cámara 2**, ya redondeado a los pasos de cada una (por ejemplo, el WB Shift G/M de Canon). |
-| **2 · EV** | **Exposición** | El EV de la escena y el **diafragma sugerido** para cada cámara según su ISO, obturación, ND y EV. Si ya fijaste un f/, te dice cuántos pasos sobran o faltan. |
+| **2 · EV** | **Exposición** | El EV de la escena y un **asistente** que propone la combinación **obturación · diafragma · ISO** para cada cámara. Considera el lente (con el formato del sensor), la estabilización, el sujeto (fijo, persona, deporte…), a mano o trípode, foto o video, y tu intención (clave alta o baja, proteger altas, abrir sombras). |
 | **3 · lx** | **Lux** | Lux y pie-candela con el sensor de luz del frente del teléfono. |
 | **4 · Hz** | **Parpadeo** | Detecta luces que pulsan (100/120 Hz) y te dice qué **obturación es segura** para los fps de cada cámara, como velocidad y como ángulo. |
 | **5 · A\|B** | **Comparar** | Mide dos luces y sugiere el **gel** para igualarlas (CTO/CTB y ≈ verde/magenta) o el valor en K para un panel. |

@@ -8,7 +8,7 @@
 
 **A light meter for photo and video, for Android.** LUX-0 uses the phone's camera and light sensor to measure **color temperature (Kelvin), tint, exposure, lux, and flicker**. It then tells you what to set on **your cameras**: white balance, aperture, and a safe shutter.
 
-> **Public beta v0.2.1: looking for beta testers.** 🧪
+> **Public beta v0.3.0: looking for beta testers.** 🧪
 > Every tool works and has been tested on a Samsung Galaxy S26 Ultra. We need testing on **more phones and more lights** to validate accuracy.
 > The app is in **English and Spanish** and follows the phone's language.
 
@@ -16,7 +16,7 @@
 
 ## Install the beta
 
-1. Go to **[Releases](https://github.com/Ultramal13/lux-0/releases)** and download the latest APK (`LUX-0-v0.2.1-beta.apk`).
+1. Go to **[Releases](https://github.com/Ultramal13/lux-0/releases)** and download the latest APK (`LUX-0-v0.3.0-beta.apk`).
 2. Open it on your Android phone. If asked, allow **"install unknown apps"** for your browser or file manager.
 3. Open LUX-0 and grant the **camera** permission, which is the only one it asks for.
 
@@ -45,7 +45,7 @@
 | Key | Tool | What it does |
 |---|---|---|
 | **1 · K** | **Color** | Live Kelvin and tint. Aim the circle at a white sheet or gray card, or use a diffuser. You get the exact value for **Camera 1 and Camera 2**, already rounded to each camera's steps (for example, Canon's G/M WB Shift). |
-| **2 · EV** | **Exposure** | The scene EV and the **suggested aperture** for each camera, based on its ISO, shutter, ND, and EV. If you already set an f-stop, it tells you how many stops you are over or under. |
+| **2 · EV** | **Exposure** | The scene EV, plus an **assistant** that suggests the full **shutter · aperture · ISO** combination for each camera. It accounts for the lens (with the sensor format), stabilization, subject (still, person, sport…), handheld or tripod, photo or video, and your intent (high or low key, protect highlights, open shadows). |
 | **3 · lx** | **Lux** | Lux and foot-candles from the phone's front light sensor. |
 | **4 · Hz** | **Flicker** | Detects pulsing lights (100/120 Hz) and tells you which **shutter is safe** for each camera's fps, as a speed and as an angle. |
 | **5 · A\|B** | **Compare** | Measures two lights and suggests the **gel** to match them (CTO/CTB and ≈ green/magenta), or the K value for a panel. |

@@ -39,6 +39,8 @@ data class CameraProfile(
     val tintStep: Double = 1.0,
     /** Duv aproximado que corrige una unidad del control de tinte (no hay equivalencias oficiales). */
     val duvPerUnit: Double = CANON_DUV_PER_STEP,
+    /** Factor de recorte del sensor (1.0 full frame, 1.5/1.6 APS-C, 2.0 micro 4/3); null = lente fijo o desconocido. */
+    val crop: Double? = null,
 ) {
     val label: String get() = "$brand $model".lowercase()
 }
@@ -104,6 +106,7 @@ fun CameraProfile.toJson(): JSONObject = JSONObject()
     .put("isoMax", isoMax ?: JSONObject.NULL)
     .put("kMode", kMode.name).put("kValues", JSONArray(kValues))
     .put("tintMin", tintMin).put("tintMax", tintMax).put("tintStep", tintStep).put("duvPerUnit", duvPerUnit)
+    .put("crop", crop ?: JSONObject.NULL)
 
 fun cameraProfileFromJson(o: JSONObject): CameraProfile {
     val values = o.optJSONArray("kValues")?.let { a -> List(a.length()) { a.getInt(it) } } ?: emptyList()
@@ -125,6 +128,7 @@ fun cameraProfileFromJson(o: JSONObject): CameraProfile {
         tintMax = o.optDouble("tintMax", 9.0),
         tintStep = o.optDouble("tintStep", 1.0).takeIf { it > 0 } ?: 1.0,
         duvPerUnit = o.optDouble("duvPerUnit", CANON_DUV_PER_STEP).takeIf { it > 0 } ?: CANON_DUV_PER_STEP,
+        crop = if (o.isNull("crop")) null else o.optDouble("crop").takeIf { it > 0 },
     )
 }
 

@@ -395,15 +395,77 @@ fun CalibrationPanel(vm: MeterViewModel, st: UiState) {
     }
 }
 
-/** Selector rápido de lo que se apunta en exposición (cambia la corrección por reflectancia). */
+/** Un selector compacto tipo "etiqueta: valor ▾" que abre una lista. */
 @Composable
-fun ReflectanceRow(vm: MeterViewModel, version: Int) {
+private fun <T> ChipPicker(label: String, value: T, options: List<T>, show: (T) -> String, onPick: (T) -> Unit) {
     val p = LocalPalette.current
-    val opts = listOf(18, 90)
-    Column(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 6.dp)) {
-        Text(tr("qué apuntas", "what you aim at"), style = mono(11, p.text))
-        Seg(listOf(tr("gris 18 %", "gray 18 %"), tr("blanco 90 %", "white 90 %")), opts.indexOf(vm.prefs.reflectance),
-            { vm.prefs.reflectance = opts[it]; vm.bump() }, Modifier.padding(top = 5.dp))
+    var open by remember { mutableStateOf(false) }
+    Box {
+        Text("$label: ${show(value)} ▾", style = mono(11, p.keyText),
+            modifier = Modifier.clip(RoundedCornerShape(7.dp)).background(p.key).clickable { open = true }
+                .padding(horizontal = 9.dp, vertical = 6.dp))
+        androidx.compose.material3.DropdownMenu(open, { open = false }, containerColor = p.body) {
+            options.forEach { o ->
+                androidx.compose.material3.DropdownMenuItem(
+                    text = { Text(show(o), style = mono(13, if (o == value) p.accent else p.text, o == value)) },
+                    onClick = { onPick(o); open = false },
+                )
+            }
+        }
+    }
+}
+
+/** Asistente de exposición: qué apuntas, uso, sujeto, soporte e intención. */
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
+@Composable
+fun AssistPanel(vm: MeterViewModel, version: Int) {
+    val p = LocalPalette.current
+    val subj = cl.lux0.color.ExposureAssistant.Subject.entries
+    val subjLabel = { s: cl.lux0.color.ExposureAssistant.Subject ->
+        when (s) {
+            cl.lux0.color.ExposureAssistant.Subject.STATIC -> tr("fijo", "still")
+            cl.lux0.color.ExposureAssistant.Subject.PERSON -> tr("persona", "person")
+            cl.lux0.color.ExposureAssistant.Subject.KIDS_PETS -> tr("niños/mascotas", "kids/pets")
+            cl.lux0.color.ExposureAssistant.Subject.SPORT -> tr("deporte", "sport")
+            cl.lux0.color.ExposureAssistant.Subject.FAST -> tr("vehículo/aves", "vehicles/birds")
+        }
+    }
+    val intents = listOf(-1.0, -2 / 3.0, 0.0, 2 / 3.0, 1.0)
+    val intentLabel = { v: Double ->
+        when (Math.round(v * 3).toInt()) {
+            -3 -> tr("clave baja −1", "low key −1"); -2 -> tr("proteger altas −⅔", "protect highlights −⅔")
+            2 -> tr("abrir sombras +⅔", "open shadows +⅔"); 3 -> tr("clave alta +1", "high key +1")
+            else -> "normal"
+        }
+    }
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 4.dp)) {
+        Text(tr("asistente de exposición", "exposure assistant"), style = mono(11, p.text))
+        androidx.compose.foundation.layout.FlowRow(
+            Modifier.padding(top = 5.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp), verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            ChipPicker(tr("apuntas", "aim at"), vm.prefs.reflectance, listOf(18, 90),
+                { if (it == 90) tr("blanco", "white") else tr("gris", "gray") }) { vm.prefs.reflectance = it; vm.bump() }
+            ChipPicker(tr("uso", "use"), vm.prefs.assistVideo, listOf(false, true),
+                { if (it) "video" else tr("foto", "photo") }) { vm.prefs.assistVideo = it; vm.bump() }
+            if (!vm.prefs.assistVideo) {
+                ChipPicker(tr("sujeto", "subject"), subj.firstOrNull { it.name == vm.prefs.assistSubject } ?: subj[1], subj, subjLabel) {
+                    vm.prefs.assistSubject = it.name; vm.bump()
+                }
+                ChipPicker(tr("soporte", "support"), vm.prefs.assistTripod, listOf(false, true),
+                    { if (it) tr("trípode", "tripod") else tr("a mano", "handheld") }) { vm.prefs.assistTripod = it; vm.bump() }
+            }
+            ChipPicker(tr("intención", "intent"), intents.minBy { kotlin.math.abs(it - vm.prefs.assistIntent) }, intents, intentLabel) {
+                vm.prefs.assistIntent = it; vm.bump()
+            }
+        }
+        listOf(1, 2).forEach { slot ->
+            vm.assistNote(slot)?.let { Text("${vm.cam(slot).model.lowercase()}: $it", style = mono(10, p.accent), modifier = Modifier.padding(top = 4.dp)) }
+        }
+        if (vm.prefs.cap1.fStop == null || vm.prefs.cap2.fStop == null) {
+            Text(tr("elige el diafragma en la tarjeta para la combinación completa", "pick the aperture in the card for the full combination"),
+                style = mono(9, p.text.copy(alpha = 0.6f)), modifier = Modifier.padding(top = 3.dp))
+        }
     }
 }
 

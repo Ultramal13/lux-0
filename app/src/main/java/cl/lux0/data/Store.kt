@@ -203,6 +203,20 @@ class Prefs(context: Context) {
     var luxFactor: Double
         get() = sp.getFloat("luxFactor", 1f).toDouble()
         set(v) = sp.edit().putFloat("luxFactor", v.toFloat()).apply()
+    // --- asistente de exposición ---
+    var assistVideo: Boolean
+        get() = sp.getBoolean("assistVideo", false)
+        set(v) = sp.edit().putBoolean("assistVideo", v).apply()
+    var assistSubject: String
+        get() = sp.getString("assistSubject", "PERSON")!!
+        set(v) = sp.edit().putString("assistSubject", v).apply()
+    var assistTripod: Boolean
+        get() = sp.getBoolean("assistTripod", false)
+        set(v) = sp.edit().putBoolean("assistTripod", v).apply()
+    var assistIntent: Double
+        get() = sp.getFloat("assistIntent", 0f).toDouble()
+        set(v) = sp.edit().putFloat("assistIntent", v.toFloat()).apply()
+
     /** Versión del aviso de responsabilidad que el usuario aceptó (0 = ninguna). */
     var termsAccepted: Int
         get() = sp.getInt("termsAccepted", 0)

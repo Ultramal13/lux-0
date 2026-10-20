@@ -15,7 +15,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.0
  },
  {
   "id": "canon-r5-mark-ii",
@@ -33,7 +34,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.0
  },
  {
   "id": "canon-r6-mark-ii",
@@ -51,7 +53,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.0
  },
  {
   "id": "canon-r6",
@@ -69,7 +72,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.0
  },
  {
   "id": "canon-r8",
@@ -87,7 +91,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.0
  },
  {
   "id": "canon-r7",
@@ -105,7 +110,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.6
  },
  {
   "id": "canon-r10",
@@ -123,7 +129,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.6
  },
  {
   "id": "canon-r50",
@@ -141,7 +148,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.6
  },
  {
   "id": "canon-r100",
@@ -159,7 +167,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.6
  },
  {
   "id": "canon-90d",
@@ -177,7 +186,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.6
  },
  {
   "id": "canon-5d-mark-iv",
@@ -195,7 +205,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.0
  },
  {
   "id": "canon-c70",
@@ -213,7 +224,8 @@
   "tintMin": -20,
   "tintMax": 20,
   "tintStep": 1,
-  "duvPerUnit": 0.00125
+  "duvPerUnit": 0.00125,
+  "crop": 1.5
  },
  {
   "id": "sony-a7-iv",
@@ -231,7 +243,8 @@
   "tintMin": -7,
   "tintMax": 7,
   "tintStep": 0.25,
-  "duvPerUnit": 0.0032
+  "duvPerUnit": 0.0032,
+  "crop": 1.0
  },
  {
   "id": "sony-a7-iii",
@@ -249,7 +262,8 @@
   "tintMin": -7,
   "tintMax": 7,
   "tintStep": 0.25,
-  "duvPerUnit": 0.0032
+  "duvPerUnit": 0.0032,
+  "crop": 1.0
  },
  {
   "id": "sony-a7s-iii",
@@ -267,7 +281,8 @@
   "tintMin": -7,
   "tintMax": 7,
   "tintStep": 0.25,
-  "duvPerUnit": 0.0032
+  "duvPerUnit": 0.0032,
+  "crop": 1.0
  },
  {
   "id": "sony-a7c-ii",
@@ -285,7 +300,8 @@
   "tintMin": -7,
   "tintMax": 7,
   "tintStep": 0.25,
-  "duvPerUnit": 0.0032
+  "duvPerUnit": 0.0032,
+  "crop": 1.0
  },
  {
   "id": "sony-a6400",
@@ -303,7 +319,8 @@
   "tintMin": -7,
   "tintMax": 7,
   "tintStep": 0.25,
-  "duvPerUnit": 0.0032
+  "duvPerUnit": 0.0032,
+  "crop": 1.5
  },
  {
   "id": "sony-a6700",
@@ -321,7 +338,8 @@
   "tintMin": -7,
   "tintMax": 7,
   "tintStep": 0.25,
-  "duvPerUnit": 0.0032
+  "duvPerUnit": 0.0032,
+  "crop": 1.5
  },
  {
   "id": "sony-zv-e10-ii",
@@ -339,7 +357,8 @@
   "tintMin": -7,
   "tintMax": 7,
   "tintStep": 0.25,
-  "duvPerUnit": 0.0032
+  "duvPerUnit": 0.0032,
+  "crop": 1.5
  },
  {
   "id": "sony-fx30",
@@ -357,7 +376,8 @@
   "tintMin": -7,
   "tintMax": 7,
   "tintStep": 0.25,
-  "duvPerUnit": 0.0032
+  "duvPerUnit": 0.0032,
+  "crop": 1.5
  },
  {
   "id": "sony-fx3",
@@ -375,7 +395,8 @@
   "tintMin": -7,
   "tintMax": 7,
   "tintStep": 0.25,
-  "duvPerUnit": 0.0032
+  "duvPerUnit": 0.0032,
+  "crop": 1.0
  },
  {
   "id": "nikon-z6-iii",
@@ -393,7 +414,8 @@
   "tintMin": -1.5,
   "tintMax": 1.5,
   "tintStep": 0.25,
-  "duvPerUnit": 0.015
+  "duvPerUnit": 0.015,
+  "crop": 1.0
  },
  {
   "id": "nikon-z8",
@@ -411,7 +433,8 @@
   "tintMin": -1.5,
   "tintMax": 1.5,
   "tintStep": 0.25,
-  "duvPerUnit": 0.015
+  "duvPerUnit": 0.015,
+  "crop": 1.0
  },
  {
   "id": "nikon-z9",
@@ -429,7 +452,8 @@
   "tintMin": -1.5,
   "tintMax": 1.5,
   "tintStep": 0.25,
-  "duvPerUnit": 0.015
+  "duvPerUnit": 0.015,
+  "crop": 1.0
  },
  {
   "id": "nikon-zf",
@@ -447,7 +471,8 @@
   "tintMin": -1.5,
   "tintMax": 1.5,
   "tintStep": 0.25,
-  "duvPerUnit": 0.015
+  "duvPerUnit": 0.015,
+  "crop": 1.0
  },
  {
   "id": "nikon-z50-ii",
@@ -465,7 +490,8 @@
   "tintMin": -1.5,
   "tintMax": 1.5,
   "tintStep": 0.25,
-  "duvPerUnit": 0.015
+  "duvPerUnit": 0.015,
+  "crop": 1.5
  },
  {
   "id": "nikon-z6-ii",
@@ -483,7 +509,8 @@
   "tintMin": -1.5,
   "tintMax": 1.5,
   "tintStep": 0.25,
-  "duvPerUnit": 0.015
+  "duvPerUnit": 0.015,
+  "crop": 1.0
  },
  {
   "id": "nikon-z5",
@@ -501,7 +528,8 @@
   "tintMin": -1.5,
   "tintMax": 1.5,
   "tintStep": 0.25,
-  "duvPerUnit": 0.015
+  "duvPerUnit": 0.015,
+  "crop": 1.0
  },
  {
   "id": "nikon-z30",
@@ -519,7 +547,8 @@
   "tintMin": -1.5,
   "tintMax": 1.5,
   "tintStep": 0.25,
-  "duvPerUnit": 0.015
+  "duvPerUnit": 0.015,
+  "crop": 1.5
  },
  {
   "id": "fujifilm-x-t5",
@@ -537,7 +566,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.5
  },
  {
   "id": "fujifilm-x-s20",
@@ -555,7 +585,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.5
  },
  {
   "id": "fujifilm-x-h2s",
@@ -573,7 +604,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.5
  },
  {
   "id": "fujifilm-x-h2",
@@ -591,7 +623,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.5
  },
  {
   "id": "fujifilm-x-t30-ii",
@@ -609,7 +642,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.5
  },
  {
   "id": "fujifilm-x100vi",
@@ -627,7 +661,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.5
  },
  {
   "id": "panasonic-s5-ii",
@@ -645,7 +680,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.0
  },
  {
   "id": "panasonic-s5-iix",
@@ -663,7 +699,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 1.0
  },
  {
   "id": "panasonic-gh6",
@@ -681,7 +718,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 2.0
  },
  {
   "id": "panasonic-gh7",
@@ -699,7 +737,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 2.0
  },
  {
   "id": "panasonic-g9-ii",
@@ -717,7 +756,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": 2.0
  },
  {
   "id": "blackmagic-pocket-4k",
@@ -735,7 +775,8 @@
   "tintMin": -50,
   "tintMax": 50,
   "tintStep": 1,
-  "duvPerUnit": 0.0005
+  "duvPerUnit": 0.0005,
+  "crop": 2.0
  },
  {
   "id": "blackmagic-pocket-6k-g2",
@@ -753,7 +794,8 @@
   "tintMin": -50,
   "tintMax": 50,
   "tintStep": 1,
-  "duvPerUnit": 0.0005
+  "duvPerUnit": 0.0005,
+  "crop": 1.56
  },
  {
   "id": "blackmagic-pocket-6k-pro",
@@ -771,7 +813,8 @@
   "tintMin": -50,
   "tintMax": 50,
   "tintStep": 1,
-  "duvPerUnit": 0.0005
+  "duvPerUnit": 0.0005,
+  "crop": 1.56
  },
  {
   "id": "blackmagic-cinema-camera-6k",
@@ -789,7 +832,8 @@
   "tintMin": -50,
   "tintMax": 50,
   "tintStep": 1,
-  "duvPerUnit": 0.0005
+  "duvPerUnit": 0.0005,
+  "crop": 1.0
  },
  {
   "id": "gopro-hero12-black",
@@ -817,7 +861,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": null
  },
  {
   "id": "gopro-hero13-black",
@@ -845,7 +890,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": null
  },
  {
   "id": "insta360-luna-ultra",
@@ -863,7 +909,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": null
  },
  {
   "id": "insta360-x5",
@@ -881,7 +928,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": null
  },
  {
   "id": "insta360-x4",
@@ -899,7 +947,8 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": null
  },
  {
   "id": "insta360-ace-pro-2",
@@ -917,6 +966,7 @@
   "tintMin": -9,
   "tintMax": 9,
   "tintStep": 1,
-  "duvPerUnit": 0.0025
+  "duvPerUnit": 0.0025,
+  "crop": null
  }
 ]

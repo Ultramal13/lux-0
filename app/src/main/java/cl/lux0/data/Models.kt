@@ -10,9 +10,16 @@ data class CaptureSettings(
     val nd: String = "",
     /** Compensación de exposición en pasos (−4..+4). */
     val ev: Double = 0.0,
+    /** Lente en mm (null = no indicado / lente fijo). */
+    val focal: Int? = null,
+    /** Pasos de estabilización (IBIS + lente). */
+    val stab: Int = 0,
+    /** Formato del sensor (factor de recorte); null = el de la cámara. */
+    val crop: Double? = null,
 ) {
     fun toJson(): JSONObject = JSONObject().put("iso", iso).put("fps", fps).put("shutter", shutter)
         .put("fStop", fStop ?: JSONObject.NULL).put("nd", nd).put("ev", ev)
+        .put("focal", focal ?: JSONObject.NULL).put("stab", stab).put("crop", crop ?: JSONObject.NULL)
 
     val label: String
         get() = buildString {
@@ -29,6 +36,9 @@ data class CaptureSettings(
             fStop = if (o.isNull("fStop")) null else o.optDouble("fStop"),
             nd = o.optString("nd", ""),
             ev = o.optDouble("ev", 0.0),
+            focal = if (o.isNull("focal")) null else o.optInt("focal").takeIf { it > 0 },
+            stab = o.optInt("stab", 0).coerceIn(0, 8),
+            crop = if (o.isNull("crop")) null else o.optDouble("crop").takeIf { it > 0 },
         )
     }
 }

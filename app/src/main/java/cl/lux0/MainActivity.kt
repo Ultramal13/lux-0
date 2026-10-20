@@ -58,7 +58,7 @@ import cl.lux0.ui.HelpPanel
 import cl.lux0.ui.HistoryPanel
 import cl.lux0.ui.KeyGrid
 import cl.lux0.ui.SourceRow
-import cl.lux0.ui.ReflectanceRow
+import cl.lux0.ui.AssistPanel
 import cl.lux0.ui.LuxPanel
 import cl.lux0.ui.ComparePanel
 import cl.lux0.ui.MapLegend
@@ -126,7 +126,7 @@ fun App(vm: MeterViewModel = viewModel()) {
                 }
                 if (fill) {
                     when (st.mode) {
-                        2 -> { ReflectanceRow(vm, st.version); CameraCards(vm, st.version) }
+                        2 -> { AssistPanel(vm, st.version); CameraCards(vm, st.version) }
                         4 -> { FlickerInfoRow(vm); CameraCards(vm, st.version) }
                         5 -> ComparePanel(vm, st)
                         6 -> MapLegend(vm)

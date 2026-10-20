@@ -40,6 +40,12 @@ private val HELP_ES = listOf(
     "avisos" to
         "zona quemada: el círculo está demasiado brillante, aléjate o cambia el ángulo. " +
         "muy oscuro: falta luz en el círculo. no parece neutro: lo que apuntas tiene color propio o la luz está muy teñida.",
+    "asistente de exposición (tecla 2)" to
+        "propone la combinación completa obturación · diafragma · iso para cada cámara. usa la luz medida, el diafragma, el nd, el lente y la estabilización de la tarjeta, " +
+        "más lo que elijas: qué apuntas, foto o video, sujeto (fijo, persona, niños/mascotas, deporte, vehículos/aves), a mano o trípode, e intención (clave baja, proteger altas, normal, abrir sombras, clave alta). " +
+        "en foto, la obturación más lenta es la más exigente entre el sujeto y el pulso: 1/(focal × formato del sensor), con los pasos de estabilización a favor. " +
+        "la focal se elige tal cual dice el lente: la app aplica sola el formato (full frame, aps-c, micro 4/3) de esa cámara. " +
+        "en video manda la obturación de la tarjeta (180°) y el asistente resuelve el iso o el nd. si no alcanza, te dice cuántos pasos faltan o sobran y qué hacer.",
     "exposición (tecla 2)" to
         "el teléfono mide el círculo y la app calcula el ev de la escena (a iso 100). con los ajustes de cada tarjeta de cámara " +
         "(iso, obturación, nd, ev) te dice qué diafragma usar, o si ya fijaste uno, cuántos pasos sobran o faltan. " +
@@ -131,6 +137,12 @@ private val HELP_EN = listOf(
     "warnings" to
         "clipped area: the circle is too bright, step back or change the angle. too dark: not enough light in the circle. " +
         "not neutral: what you aim at has its own color, or the light is strongly tinted.",
+    "exposure assistant (key 2)" to
+        "suggests the full shutter · aperture · iso combination for each camera. it uses the measured light, plus the aperture, nd, lens and stabilization from the card, " +
+        "and what you pick: what you aim at, photo or video, subject (still, person, kids/pets, sport, vehicles/birds), handheld or tripod, and intent (low key, protect highlights, normal, open shadows, high key). " +
+        "for photos, the slowest shutter is the stricter of the subject and the handheld limit: 1/(focal × sensor format), with stabilization stops in your favor. " +
+        "pick the focal length printed on the lens: the app applies that camera's format (full frame, aps-c, micro 4/3) by itself. " +
+        "for video the card's shutter rules (180°) and the assistant solves iso or nd. if it can't fit, it tells you how many stops you are short or over and what to do.",
     "exposure (key 2)" to
         "the phone meters the circle and the app computes the scene ev (at iso 100). using each camera card's settings " +
         "(iso, shutter, nd, ev) it tells you which aperture to use, or, if you already set one, how many stops you are over or under. " +

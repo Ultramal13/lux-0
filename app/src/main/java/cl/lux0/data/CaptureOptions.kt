@@ -42,6 +42,22 @@ object CaptureOptions {
         return sign + (if (whole > 0) "$whole" else "") + frac
     }
 
+    /** Distancias focales habituales (mm); null = no indicado / lente fijo. */
+    val FOCAL: List<Int?> = listOf(null, 10, 12, 14, 16, 18, 20, 24, 28, 35, 40, 50, 56, 70, 85, 100, 105, 135, 150, 200, 300, 400, 500, 600, 800)
+
+    /** Pasos de estabilización (IBIS + lente). */
+    val STAB: List<Int> = (0..8).toList()
+
+    /** Formatos de sensor: factor de recorte; null = el de la cámara. */
+    val CROP: List<Double?> = listOf(null, 1.0, 1.5, 1.6, 2.0, 2.7)
+
+    fun focalLabel(f: Int?): String = f?.let { "$it mm" } ?: "–"
+    fun stabLabel(s: Int): String = if (s == 0) tr("sin", "none") else "$s " + tr("pasos", "stops")
+    fun cropLabel(c: Double?): String = when (c) {
+        null -> tr("el de la cámara", "camera default"); 1.0 -> "full frame"; 1.5 -> "aps-c (1.5)"; 1.6 -> "aps-c canon (1.6)"
+        2.0 -> "micro 4/3 (2.0)"; 2.7 -> "1\" (2.7)"; else -> "×$c"
+    }
+
     fun isoFor(max: Int?): List<Int> = if (max == null) ISO else ISO.filter { it <= max }
 
     fun fpsLabel(f: Double): String = when (f) {

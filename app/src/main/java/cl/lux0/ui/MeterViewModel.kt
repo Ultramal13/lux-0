@@ -355,7 +355,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     // Sin bump(): refrescar recrearía los campos y se perdería el foco al escribir.
     /** Texto de la fila de cada cámara según el modo actual. */
     fun slotText(slot: Int, r: Reading?): String = when (_state.value.mode) {
-        2 -> expoText(slot)
+        2 -> assistText(slot)
         3 -> ""
         4 -> flickerText(slot)
         else -> r?.let { recText(cam(slot), it) } ?: ""
@@ -364,6 +364,45 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     /** EV de la escena (gris medio) desde el EV del teléfono, la reflectancia y el ajuste de calibración. */
     fun sceneEv(phoneEv100: Double): Double =
         cl.lux0.color.Exposure.sceneEv(phoneEv100, prefs.reflectance.coerceIn(5, 95), calibrationEv = prefs.evCal)
+
+    /** Resultado del asistente para una cámara (null si falta el diafragma o la medición). */
+    fun assist(slot: Int): cl.lux0.color.ExposureAssistant.Result? {
+        val ev = _state.value.ev100 ?: return null
+        val c = if (slot == 1) prefs.cap1 else prefs.cap2
+        val p = cam(slot)
+        val subject = runCatching { cl.lux0.color.ExposureAssistant.Subject.valueOf(prefs.assistSubject) }
+            .getOrDefault(cl.lux0.color.ExposureAssistant.Subject.PERSON)
+        return cl.lux0.color.ExposureAssistant.suggest(cl.lux0.color.ExposureAssistant.Input(
+            sceneEv100 = sceneEv(ev), fStop = c.fStop,
+            ndStops = cl.lux0.data.CaptureOptions.ND.firstOrNull { it.first == c.nd }?.second ?: 0,
+            isoMax = p.isoMax ?: 51200, intentEv = prefs.assistIntent + c.ev, video = prefs.assistVideo, fps = c.fps,
+            cameraShutterSec = cl.lux0.color.Exposure.shutterSeconds(c.shutter, c.fps), subject = subject,
+            tripod = prefs.assistTripod, focalMm = c.focal, crop = c.crop ?: p.crop, stabStops = c.stab,
+        ))
+    }
+
+    /** Fila de la cámara en exposición: la combinación del asistente o, sin diafragma, el cálculo anterior. */
+    fun assistText(slot: Int): String {
+        val r = assist(slot) ?: return expoText(slot)
+        val base = cl.lux0.color.ExposureAssistant.shutterLabel(r.shutterSec) + " · " +
+            cl.lux0.data.CaptureOptions.fLabel(r.fStop) + " · iso ${r.iso}"
+        return if (kotlin.math.abs(r.stopsOff) >= 0.17) "$base · ⚠" else base
+    }
+
+    /** Explicación del aviso ⚠ de una cámara (o null si calza). */
+    fun assistNote(slot: Int): String? {
+        val r = assist(slot) ?: return null
+        val n = cl.lux0.data.CaptureOptions.evLabel(Math.round(kotlin.math.abs(r.stopsOff) * 3) / 3.0).removePrefix("+").removePrefix("−")
+        return when {
+            r.stopsOff >= 0.17 -> tr("falta luz (", "not enough light (") + n + tr(" pasos): ", " stops): ") +
+                (r.fixAperture?.let { tr("abre a ", "open to ") + cl.lux0.data.CaptureOptions.fLabel(it) + tr(", ", ", ") } ?: "") +
+                tr("agrega luz o usa trípode", "add light or use a tripod")
+            r.stopsOff <= -0.17 -> tr("sobra luz (", "too much light (") + n + tr(" pasos): ", " stops): ") +
+                (r.fixNdStops?.let { s -> cl.lux0.data.CaptureOptions.ND.firstOrNull { it.second >= s }?.first?.let { tr("usa ", "use ") + it } }
+                    ?: tr("cierra el diafragma", "stop down"))
+            else -> null
+        }
+    }
 
     /** Recomendación de exposición para una cámara con sus ajustes de captura. */
     fun expoText(slot: Int): String {

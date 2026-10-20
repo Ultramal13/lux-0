@@ -55,6 +55,10 @@ ADB=$ANDROID_HOME/platform-tools/adb
   ```
   En el emulador la app entra sola en **modo demo** (lecturas simuladas, marcadas "● demo"). En un teléfono real nunca.
 
+## Asistente de exposición (v0.3.0)
+- `color/ExposureAssistant.kt` tiene pruebas: el límite a pulso es 1/(focal × crop) × 2^estab (tope 1/2 s), el sujeto fija un máximo de obturación, se prefiere el ISO más bajo, y en video manda la obturación de la tarjeta.
+- `crop` por modelo en `cameras.json`; la captura agrega `focal`, `stab` y `crop` (opcional, para recortes o adaptadores).
+
 ## Versiones de distribución (beta)
 - `./gradlew :app:assembleRelease` genera `app/build/outputs/apk/release/app-release.apk`.
 - La firma se lee de `~/.lux0/keystore.properties` y `~/.lux0/lux0-release.jks`. Están fuera del repo: **nunca subirlos**. Si faltan, el release sale sin firmar.
