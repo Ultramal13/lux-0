@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -267,6 +269,9 @@ fun SettingsPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
             var f by remember { mutableStateOf(vm.prefs.luxFactor) }
             Picker("lux", f, (5..20).map { it / 10.0 }, { String.format(Locale.US, "×%.1f", it) }) { f = it; vm.prefs.luxFactor = it; vm.bump() }
         }
+        SettingRow(tr("compatibilidad de este teléfono", "this phone's compatibility")) {
+            Text(compatLabel(vm.compat), style = mono(12, if (vm.compat == Compat.FULL) p.text else p.accent))
+        }
         SettingRow(tr("ayuda", "help")) {
             Seg(listOf(tr("qué significa cada cosa →", "what each setting means →")), -1, { vm.setMode(10) })
         }
@@ -385,6 +390,30 @@ fun CameraCards(vm: MeterViewModel, version: Int) {
         val slot = editing
         Dialog(tr("captura cámara", "capture camera") + " $slot · ${vm.cam(slot).label}", { editing = 0; vm.bump() }, tr("listo", "done"), { editing = 0; vm.bump() }, showCancel = false) {
             CaptureEditor(vm, slot)
+        }
+    }
+}
+
+/** Aviso de responsabilidad: se acepta una vez (y de nuevo si cambia su versión). */
+@Composable
+fun TermsScreen(compat: Compat, onAccept: () -> Unit, onExit: () -> Unit) {
+    val p = LocalPalette.current
+    Column(
+        Modifier.fillMaxSize().background(p.body).safeDrawingPadding().padding(20.dp).verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text("lux-0", style = mono(26, p.text, true))
+        Text(tr("antes de empezar", "before you start"), style = mono(15, p.text, true))
+        termsText().forEach { Text("· $it", style = mono(12, p.text)) }
+        Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(10.dp)).background(p.key).padding(12.dp)) {
+            Text(tr("tu teléfono", "your phone"), style = mono(11, p.keyText, true))
+            Text(compatLabel(compat), style = mono(12, if (compat == Compat.FULL) p.keyText else p.accent))
+        }
+        Text(tr("texto completo: archivo LICENSE en github.com/Ultramal13/lux-0", "full text: LICENSE file at github.com/Ultramal13/lux-0"),
+            style = mono(10, p.text.copy(alpha = 0.6f)))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            WideKey(tr("salir", "exit"), false, Modifier.weight(1f), onExit)
+            WideKey(tr("acepto", "i accept"), true, Modifier.weight(1f), onAccept)
         }
     }
 }

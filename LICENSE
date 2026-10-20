@@ -37,6 +37,13 @@ idoneidad para un fin determinado o ausencia de errores.
   de su uso, entre ellos: fallas o calentamiento del teléfono, pérdida de
   datos o sesiones, ni resultados fotográficos o de video, trabajos o encargos
   afectados.
+- No se garantiza que la app funcione en todos los teléfonos. En equipos de
+  gama baja o con cámaras limitadas puede funcionar en modo reducido o no
+  funcionar. La app revisa el teléfono al abrirse y desactiva las funciones
+  más exigentes cuando corresponde, pero esa revisión es una ayuda y no una
+  garantía. Si notas calentamiento, lentitud o cualquier falla, deja de usarla.
+- Al usar la app aceptas este aviso. La app lo muestra y pide aceptarlo la
+  primera vez que se abre.
 - La app no recopila ni envía datos. Lo que guardas queda solo en tu teléfono
   y es tu responsabilidad respaldarlo (por ejemplo, exportando el CSV).
 - Los datos de cámaras provienen de manuales públicos de cada fabricante y
@@ -55,6 +62,13 @@ freedom from errors.
   not liable for any direct or indirect damage arising from its use,
   including phone malfunction or heating, loss of data or sessions, or
   affected photo or video results, jobs, or assignments.
+- The app is not guaranteed to work on every phone. On low-end devices or
+  phones with limited cameras it may run in a reduced mode or not at all. The
+  app checks the phone on launch and turns off the most demanding features
+  when needed, but that check is an aid, not a guarantee. If you notice
+  heating, slowness, or any malfunction, stop using it.
+- By using the app you accept this disclaimer. The app shows it and asks you
+  to accept it the first time it opens.
 - The app does not collect or send any data. What you save stays on your
   phone, and backing it up is your responsibility (for example, by exporting
   the CSV).

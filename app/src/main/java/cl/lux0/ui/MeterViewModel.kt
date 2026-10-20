@@ -90,6 +90,9 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     var cameras: List<CameraProfile> = store.allCameras()
         private set
 
+    /** Compatibilidad del teléfono (se revisa una vez al abrir). */
+    val compat: Compat = detectCompat(app)
+
     private val camera = MeterCamera(app, ::onSample) { msg -> _state.update { it.copy(error = msg) } }
     @Volatile var lastTouch = SystemClock.elapsedRealtime()
         private set
@@ -101,6 +104,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
         power.addThermalStatusListener(app.mainExecutor, thermal)
         onThermal(power.currentThermalStatus)
         if (IS_EMULATOR) startDemo()
+        if (compat == Compat.NONE) _state.update { it.copy(mode = 3) }
     }
 
     /** Modo demo: una luz que varía lento entre ~4100 y ~4900 K con leve magenta. */
@@ -131,7 +135,8 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
      * se reanuda cuando el estado baja a "sin calor", o queda en "ligero" al menos 60 s seguidos.
      */
     private fun onThermal(status: Int) {
-        camera.intervalMs = if (status >= PowerManager.THERMAL_STATUS_LIGHT) maxOf(prefs.intervalMs, 3000L) else prefs.intervalMs
+        val base = if (compat == Compat.LITE) maxOf(prefs.intervalMs, 2000L) else prefs.intervalMs
+        camera.intervalMs = if (status >= PowerManager.THERMAL_STATUS_LIGHT) maxOf(base, 3000L) else base
         coolJob?.cancel()
         when {
             status >= PowerManager.THERMAL_STATUS_MODERATE -> _state.update { it.copy(hot = true) }
@@ -194,6 +199,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
 
     // --- acciones ---
     fun setMode(m: Int) {
+        if (m in 1..8 && !compat.allows(m)) return
         // El modo parpadeo cambia la exposición de la cámara; al salir vuelve a la normal.
         camera.setFlicker(m == 4)
         camera.mapMode = m == 6

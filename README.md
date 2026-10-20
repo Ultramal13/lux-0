@@ -77,6 +77,7 @@
 LUX-0 es una **beta** y se entrega **"tal cual"**, sin garantías:
 
 - **Las mediciones son orientativas.** Verifica con tu cámara antes de un trabajo importante.
+- **No se garantiza que funcione en todos los teléfonos.** Al abrirse, la app revisa el tuyo y queda en modo **completo**, **liviano** (en equipos básicos mide más lento y apaga parpadeo y mapa) o **sin cámara compatible** (solo lux). La primera vez pide aceptar este aviso.
 - **La usas bajo tu propia responsabilidad.** Bexia no se hace responsable por fallas o calentamiento del teléfono, pérdida de datos ni resultados de trabajos.
 - **Las marcas de cámaras mencionadas** pertenecen a sus dueños y no están afiliadas al proyecto.
 

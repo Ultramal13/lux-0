@@ -79,7 +79,7 @@ val KEYS: List<KeyDef> get() = listOf(
 )
 
 @Composable
-fun KeyGrid(mode: Int, onKey: (Int) -> Unit) {
+fun KeyGrid(mode: Int, allowed: (Int) -> Boolean = { true }, onKey: (Int) -> Unit) {
     val p = LocalPalette.current
     Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
         KEYS.chunked(4).forEach { row ->
@@ -89,8 +89,8 @@ fun KeyGrid(mode: Int, onKey: (Int) -> Unit) {
                     Column(
                         Modifier.weight(1f).aspectRatio(1.25f).shadow(2.dp, RoundedCornerShape(9.dp))
                             .clip(RoundedCornerShape(9.dp)).background(if (on) p.keyOn else p.key)
-                            .alpha(if (k.enabled) 1f else 0.35f)
-                            .clickable(enabled = k.enabled) { onKey(k.n) }
+                            .alpha(if (k.enabled && allowed(k.n)) 1f else 0.35f)
+                            .clickable(enabled = k.enabled && allowed(k.n)) { onKey(k.n) }
                             .padding(6.dp),
                         verticalArrangement = Arrangement.SpaceBetween,
                     ) {

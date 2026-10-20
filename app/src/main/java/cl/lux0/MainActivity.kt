@@ -46,6 +46,10 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.lux0.ui.BlackScreen
+import cl.lux0.ui.Compat
+import cl.lux0.ui.TERMS_VERSION
+import cl.lux0.ui.TermsScreen
+import cl.lux0.ui.allows
 import cl.lux0.ui.CalibrationPanel
 import cl.lux0.ui.CameraCards
 import cl.lux0.ui.Claro
@@ -89,12 +93,21 @@ fun App(vm: MeterViewModel = viewModel()) {
         mutableStateOf(ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
     }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }
-    LaunchedEffect(Unit) { if (!granted) launcher.launch(Manifest.permission.CAMERA) }
+    // Primero el aviso: sin aceptarlo no se pide la cámara ni se muestra la app.
+    var accepted by remember { mutableStateOf(vm.prefs.termsAccepted >= TERMS_VERSION) }
+    LaunchedEffect(accepted) { if (accepted && !granted && vm.compat != Compat.NONE) launcher.launch(Manifest.permission.CAMERA) }
     var textureView by remember { mutableStateOf<TextureView?>(null) }
     LaunchedEffect(Unit) {
         while (true) { delay(5_000); vm.checkIdle() }
     }
 
+    if (!accepted) {
+        CompositionLocalProvider(LocalPalette provides palette) {
+            TermsScreen(vm.compat, onAccept = { vm.prefs.termsAccepted = TERMS_VERSION; accepted = true },
+                onExit = { (ctx as? android.app.Activity)?.finish() })
+        }
+        return
+    }
     CompositionLocalProvider(LocalPalette provides palette) {
         Column(Modifier.fillMaxSize().background(palette.body)
             .pointerInput(Unit) {
@@ -132,7 +145,7 @@ fun App(vm: MeterViewModel = viewModel()) {
             // Con el teclado abierto se ocultan las teclas para que no se encimen con lo que se escribe.
             if (!WindowInsets.isImeVisible) {
             Spacer(Modifier.height(8.dp))
-            KeyGrid(st.mode) { vm.setMode(it) }
+            KeyGrid(st.mode, { vm.compat.allows(it) }) { vm.setMode(it) }
             Row(Modifier.padding(top = 7.dp), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 WideKey(if (st.hold) "■ hold" else "hold", false, Modifier.weight(1f)) { vm.toggleHold() }
                 WideKey(tr("● guardar", "● save"), true, Modifier.weight(1f)) {

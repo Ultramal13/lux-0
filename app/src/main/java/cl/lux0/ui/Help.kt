@@ -98,6 +98,10 @@ private val HELP_ES = listOf(
         "si el teléfono se calienta, la app mide más lento o se detiene hasta que se enfríe.",
     "temas" to
         "◐ cambia entre auto, claro, oscuro y noche rojo. noche rojo sirve en sets a oscuras: no encandila ni ensucia la escena.",
+    "aviso y compatibilidad" to
+        "lux-0 es una beta gratuita entregada tal cual: las mediciones son orientativas y la usas bajo tu responsabilidad. " +
+        "al abrir, la app revisa tu teléfono: completa, liviana (mide cada 2 s y apaga parpadeo y mapa para no exigir equipos básicos) " +
+        "o sin cámara compatible (solo lux). el estado se ve en ajustes.",
     "modo demo" to
         "solo en el emulador del computador: lecturas simuladas para revisar la interfaz. en el teléfono nunca se activa.",
 )
@@ -185,6 +189,10 @@ private val HELP_EN = listOf(
         "if the phone gets warm, the app measures more slowly or stops until it cools down.",
     "themes" to
         "◐ switches between auto, light, dark and red night. red night is for dark sets: it does not dazzle or spill light on the scene.",
+    "disclaimer and compatibility" to
+        "lux-0 is a free beta provided as is: measurements are for guidance and you use it at your own risk. " +
+        "on launch the app checks your phone: full, lite (measures every 2 s and turns off flicker and map so basic devices are not pushed) " +
+        "or no compatible camera (lux only). the status is shown in settings.",
     "demo mode" to
         "only on the computer's emulator: simulated readings to review the interface. it never turns on on a phone.",
 )

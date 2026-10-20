@@ -203,6 +203,10 @@ class Prefs(context: Context) {
     var luxFactor: Double
         get() = sp.getFloat("luxFactor", 1f).toDouble()
         set(v) = sp.edit().putFloat("luxFactor", v.toFloat()).apply()
+    /** Versión del aviso de responsabilidad que el usuario aceptó (0 = ninguna). */
+    var termsAccepted: Int
+        get() = sp.getInt("termsAccepted", 0)
+        set(v) = sp.edit().putInt("termsAccepted", v).apply()
     var cap1: CaptureSettings
         get() = CaptureSettings.fromJson(sp.getString("cap1", null)?.let { JSONObject(it) })
         set(v) = sp.edit().putString("cap1", v.toJson().toString()).apply()
