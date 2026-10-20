@@ -65,4 +65,5 @@ Corre las pruebas y compila antes de cada commit. Haz commits pequeños, con men
   1. (hecho) v0.2 probada en el teléfono el 2026-10-19: todo bien, sin calentamiento.
   2. Validar que el HAL de Samsung respeta la matriz identidad y la curva lineal (calibrando con RAW de la R5).
   3. (resuelto) Luna Ultra: 2000–10000 K en pasos de 200, ISO 100–6400, confirmado en la cámara.
-- **Etapa 2:** exposición, lux, parpadeo, comparar → gel, mapa de luces mezcladas y objetivo. Las perillas (`ui/Controls.kt`, `Knob`) vuelven en Exposición.
+- **Etapa 2 implementada (2026-10-20), probada solo en el emulador (modo demo):** exposición, lux, parpadeo, comparar → gel, mapa y objetivo. Plan: `docs/superpowers/plans/2026-10-20-lux0-etapa2.md`. No se usan perillas: exposición y parpadeo leen la captura de las tarjetas de cámara.
+- **Pendiente en el teléfono:** validar el EV (exposición reflejada), que el modo parpadeo (AE off, 1/2000 s) funcione en el S26 Ultra y entregue `SENSOR_ROLLING_SHUTTER_SKEW`, y el rendimiento del mapa.

@@ -57,6 +57,7 @@ import cl.lux0.ui.SourceRow
 import cl.lux0.ui.ReflectanceRow
 import cl.lux0.ui.LuxPanel
 import cl.lux0.ui.ComparePanel
+import cl.lux0.ui.MapLegend
 import cl.lux0.ui.FlickerInfoRow
 import cl.lux0.ui.LocalPalette
 import cl.lux0.ui.MeterViewModel
@@ -101,9 +102,9 @@ fun App(vm: MeterViewModel = viewModel()) {
             }
             .safeDrawingPadding().padding(horizontal = 14.dp, vertical = 8.dp)) {
             Header(st.mode, st.theme, vm::cycleTheme) { vm.setMode(10) }
-            val meter = st.mode in listOf(1, 2, 4, 5, 9)
+            val meter = st.mode in listOf(1, 2, 4, 5, 6, 9)
             if (meter) {
-                val fill = st.mode in listOf(1, 2, 4, 5)
+                val fill = st.mode in listOf(1, 2, 4, 5, 6)
                 // En color la pantalla negra se estira (el visor llena el espacio libre); en calibración no.
                 val screenMod = if (fill) Modifier.weight(1f) else Modifier
                 if (granted) BlackScreen(vm, st, screenMod, fill) { textureView = it }
@@ -115,6 +116,7 @@ fun App(vm: MeterViewModel = viewModel()) {
                         2 -> { ReflectanceRow(vm, st.version); CameraCards(vm, st.version) }
                         4 -> { FlickerInfoRow(vm); CameraCards(vm, st.version) }
                         5 -> ComparePanel(vm, st)
+                        6 -> MapLegend(vm)
                         else -> { SourceRow(st, vm::setSource); CameraCards(vm, st.version) }
                     }
                 } else Box(Modifier.weight(1f)) { CalibrationPanel(vm, st) }

@@ -57,3 +57,28 @@ fun computeRoiYuv(y: Plane, u: Plane, v: Plane, width: Int, height: Int, radius:
     val b = (sb / n / 255).coerceAtLeast(0.0)
     return RoiResult(r, g, b, clipped.toDouble() / n, (r + g + b) / 3)
 }
+
+/** Promedio de un rectángulo del cuadro (para las celdas del mapa), con paso de muestreo. */
+fun computeRectYuv(y: Plane, u: Plane, v: Plane, x0: Int, y0: Int, x1: Int, y1: Int, step: Int = 4): RoiResult {
+    var sr = 0.0; var sg = 0.0; var sb = 0.0
+    var n = 0; var clipped = 0
+    var py = y0
+    while (py < y1) {
+        var px = x0
+        while (px < x1) {
+            val yy = y.buffer.get(py * y.rowStride + px * y.pixelStride).toInt() and 0xFF
+            val cu = (u.buffer.get((py / 2) * u.rowStride + (px / 2) * u.pixelStride).toInt() and 0xFF) - 128
+            val cv = (v.buffer.get((py / 2) * v.rowStride + (px / 2) * v.pixelStride).toInt() and 0xFF) - 128
+            val rr = yy + 1.402 * cv
+            val gg = yy - 0.344136 * cu - 0.714136 * cv
+            val bb = yy + 1.772 * cu
+            if (yy >= 250 || rr >= 254 || gg >= 254 || bb >= 254) clipped++
+            sr += rr; sg += gg; sb += bb; n++
+            px += step
+        }
+        py += step
+    }
+    if (n == 0) return RoiResult(0.0, 0.0, 0.0, 0.0, 0.0)
+    val r = (sr / n / 255).coerceAtLeast(0.0); val g = (sg / n / 255).coerceAtLeast(0.0); val b = (sb / n / 255).coerceAtLeast(0.0)
+    return RoiResult(r, g, b, clipped.toDouble() / n, (r + g + b) / 3)
+}

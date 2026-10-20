@@ -10,7 +10,7 @@
 
 No toma fotos. Es un instrumento de medición.
 
-> **Estado: en desarrollo — etapa 1 funcionando, en pruebas.**
+> **Estado: en desarrollo — etapas 1 y 2 implementadas, en pruebas.**
 > Mide y recomienda valores, pero falta validar la precisión en terreno y el consumo de batería y temperatura en uso prolongado. Todavía no hay versión publicada.
 >
 > La app está en **español e inglés**: usa el idioma del teléfono.
@@ -45,9 +45,14 @@ No toma fotos. Es un instrumento de medición.
   - imagen de análisis pequeña y pocos cuadros por segundo
 - **Ayuda integrada,** que explica cada parámetro.
 
-## Qué viene (etapa 2)
+## Etapa 2 (implementada, en pruebas)
 
-Exposición (diafragma, ND y EV sugeridos), lux, parpadeo (flicker) según fps y obturación, comparar dos luces y sugerir gel (CTO/CTB/Plus-Minus Green), mapa de luces mezcladas y temperatura objetivo.
+- **Exposición:** EV de la escena y diafragma sugerido, o pasos de diferencia, para cada cámara según su ISO, obturación, ND y EV.
+- **Lux:** con el sensor de luz frontal del teléfono.
+- **Parpadeo:** detecta 100/120 Hz con las bandas del rolling shutter (1/2000 s) y dice qué obturación es segura para los fps de cada cámara.
+- **Comparar dos luces:** diferencia en mired y tinte, más el gel sugerido (CTO/CTB y ≈ Plus/Minus Green) o el valor para un panel.
+- **Mapa de luces mezcladas:** grilla sobre el visor, en naranja las zonas más cálidas y en azul las más frías.
+- **Temperatura objetivo:** con el gel para llegar a ella.
 
 ---
 

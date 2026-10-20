@@ -41,6 +41,8 @@ data class Sample(
     /** Solo en modo parpadeo: true si se pudo analizar el cuadro. */
     val flickerChecked: Boolean = false,
     val flicker: cl.lux0.color.Flicker.Result? = null,
+    /** Solo en modo mapa: temperatura por celda, orientada como la pantalla. */
+    val map: cl.lux0.color.LightMap? = null,
 )
 
 /** Fracción del lado corto del cuadro que mide el círculo. La mira del visor usa la misma. */
@@ -80,6 +82,8 @@ class MeterCamera(
     @Volatile var intervalMs: Long = 1000
     /** Modo parpadeo: exposición manual corta para ver las bandas del rolling shutter. */
     @Volatile private var flicker = false
+    /** Modo mapa: además del círculo, calcula la temperatura de una grilla de 8×6 celdas. */
+    @Volatile var mapMode = false
     private var aeTimeNs = 10_000_000L
     private var aeIso = 400
 
@@ -317,9 +321,10 @@ class MeterCamera(
             val cc2 = transform(c.get(CameraCharacteristics.SENSOR_CALIBRATION_TRANSFORM2)) ?: cc1
             val t1 = illuminantK(c.get(CameraCharacteristics.SENSOR_REFERENCE_ILLUMINANT1))
             val t2 = c.get(CameraCharacteristics.SENSOR_REFERENCE_ILLUMINANT2)?.toInt()?.let { illuminantK(it) } ?: t1
-            val xy = ColorMath.cameraNeutralToXy(
-                doubleArrayOf(roi.r / roi.g, 1.0, roi.b / roi.g), cm1, cm2, cc1, cc2, t1, t2)
-            if (xy.first.isNaN() || xy.second.isNaN()) { onSample(Sample(null, tr("no se pudo calcular", "could not compute"), roi)); return }
+            val toXy = { rr: RoiResult -> ColorMath.cameraNeutralToXy(doubleArrayOf(rr.r / rr.g, 1.0, rr.b / rr.g), cm1, cm2, cc1, cc2, t1, t2) }
+            val map = if (mapMode) buildMap(p, img.width, img.height, c, toXy) else null
+            val xy = toXy(roi)
+            if (xy.first.isNaN() || xy.second.isNaN()) { onSample(Sample(null, tr("no se pudo calcular", "could not compute"), roi, ev, map = map)); return }
             history.addLast(xy)
             while (history.size > 3) history.removeFirst()
             val r = ColorMath.xyToReading(history.sumOf { it.first } / history.size, history.sumOf { it.second } / history.size)
@@ -328,11 +333,31 @@ class MeterCamera(
                 abs(r.duv) > 0.02 -> tr("no parece neutro o luz muy teñida", "not neutral, or strongly tinted light")
                 else -> null
             }
-            onSample(Sample(r.copy(cct = Calibration.apply(r.cct, calOffsetMired)), warning, roi, ev))
+            onSample(Sample(r.copy(cct = Calibration.apply(r.cct, calOffsetMired)), warning, roi, ev, map = map))
         } catch (e: Exception) {
             Log.w("lux0", "cálculo de color", e)
             onSample(Sample(null, tr("no se pudo calcular", "could not compute"), null))
         }
+    }
+
+    /** Grilla 8×6 en coordenadas del sensor → temperatura por celda (NaN si oscura, quemada o muy teñida). */
+    private fun buildMap(p: Array<Image.Plane>, w: Int, h: Int, c: CameraCharacteristics, toXy: (RoiResult) -> Pair<Double, Double>): cl.lux0.color.LightMap {
+        val bc = 8; val br = 6
+        val yP = Plane(p[0].buffer, p[0].rowStride, p[0].pixelStride)
+        val uP = Plane(p[1].buffer, p[1].rowStride, p[1].pixelStride)
+        val vP = Plane(p[2].buffer, p[2].rowStride, p[2].pixelStride)
+        val buf = DoubleArray(bc * br) { i ->
+            val cx = i % bc; val cy = i / bc
+            val cell = computeRectYuv(yP, uP, vP, cx * w / bc, cy * h / br, (cx + 1) * w / bc, (cy + 1) * h / br, step = 6)
+            if (cell.warning() != null || cell.meanLevel < 0.03 || cell.g <= 0.001) Double.NaN
+            else try {
+                val xy = toXy(cell)
+                val rd = ColorMath.xyToReading(xy.first, xy.second)
+                if (abs(rd.duv) > 0.03 || rd.outOfRange) Double.NaN else Calibration.apply(rd.cct, calOffsetMired)
+            } catch (e: Exception) { Double.NaN }
+        }
+        val orientation = c.get(CameraCharacteristics.SENSOR_ORIENTATION) ?: 90
+        return cl.lux0.color.LightMap.toDisplay(buf, bc, br, orientation)
     }
 
     /** Perfil de luminancia por filas (en orden de lectura del sensor) → frecuencia y profundidad. */

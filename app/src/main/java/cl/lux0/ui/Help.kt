@@ -55,6 +55,10 @@ private val HELP_ES = listOf(
     "comparar (tecla 5)" to
         "mide la luz a (botón medir a), luego la b sobre la misma hoja. te da la diferencia en mired y tinte, " +
         "el gel para que b iguale a a (cto/ctb y ≈ plus/minus green) o el valor en k para un panel regulable.",
+    "mapa (tecla 6)" to
+        "divide la imagen en celdas y colorea cada una según su luz comparada con la referencia (el objetivo si lo fijaste; si no, la luz del círculo): " +
+        "naranja = más cálida, azul = más fría, gris = sin dato. sirve para ver de un vistazo luces mezcladas (ventana fría, lámpara cálida). " +
+        "depende del color de las superficies: es una guía ≈.",
     "temperatura objetivo" to
         "en ajustes eliges la temperatura que quieres (ej. 5600 k). en color aparece \"◎ objetivo\" con el gel para llevar la luz medida a ese valor.",
     "ajustes de calibración de exposición y lux" to
@@ -136,6 +140,10 @@ private val HELP_EN = listOf(
     "compare (key 5)" to
         "measure light a (measure a button), then b on the same sheet. it gives the difference in mired and tint, " +
         "the gel to make b match a (cto/ctb and ≈ plus/minus green) or the k value for a dimmable panel.",
+    "map (key 6)" to
+        "splits the image into cells and colors each one by its light compared with the reference (the target if set; otherwise the light in the circle): " +
+        "orange = warmer, blue = cooler, gray = no data. useful to spot mixed lighting at a glance (cool window, warm lamp). " +
+        "it depends on surface colors: it is a ≈ guide.",
     "target temperature" to
         "in settings you pick the temperature you want (e.g. 5600 k). in color mode \"◎ target\" shows the gel that brings the measured light to it.",
     "exposure and lux calibration" to

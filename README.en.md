@@ -10,7 +10,7 @@
 
 It does not take pictures. It is a measuring instrument.
 
-> **Status: in development. Stage 1 works and is being tested.**
+> **Status: in development. Stages 1 and 2 are implemented and being tested.**
 > It measures and recommends values. Accuracy in real shoots, and battery use and temperature during long sessions, still need to be validated. There is no published release yet.
 >
 > The app is in **English and Spanish**: it follows the phone's language.
@@ -45,14 +45,14 @@ It does not take pictures. It is a measuring instrument.
   - a small analysis image at a low frame rate
 - **Built-in help** that explains every setting.
 
-## Coming next (stage 2)
+## Stage 2 (implemented, being tested)
 
-- **Exposure:** suggested aperture, ND, and EV.
-- **Lux.**
-- **Flicker** warnings based on fps and shutter.
-- **Two-light comparison** with a gel suggestion (CTO, CTB, Plus/Minus Green).
-- **Mixed-light map.**
-- **Target temperature.**
+- **Exposure:** scene EV, plus the suggested aperture (or how many stops over or under) for each camera, based on its ISO, shutter, ND, and EV.
+- **Lux:** from the phone's front light sensor.
+- **Flicker:** detects 100/120 Hz from rolling-shutter bands at 1/2000 s, and tells you which shutter is safe for each camera's fps.
+- **Two-light comparison:** the difference in mired and tint, plus the suggested gel (CTO, CTB, ≈ Plus/Minus Green) or a panel value.
+- **Mixed-light map:** a grid over the viewfinder, with warmer areas in orange and cooler areas in blue.
+- **Target temperature:** with the gel needed to reach it.
 
 ---
 

@@ -74,7 +74,7 @@ data class KeyDef(val n: Int, val glyph: String, val label: String, val enabled:
 val KEYS: List<KeyDef> get() = listOf(
     KeyDef(1, "K", tr("color", "color"), true), KeyDef(2, "EV", tr("expo", "expo"), true),
     KeyDef(3, "lx", "lux", true), KeyDef(4, "Hz", tr("parpadeo", "flicker"), true),
-    KeyDef(5, "A|B", tr("comparar", "compare"), true), KeyDef(6, "▦", tr("mapa", "map"), false),
+    KeyDef(5, "A|B", tr("comparar", "compare"), true), KeyDef(6, "▦", tr("mapa", "map"), true),
     KeyDef(7, "≡", tr("sesiones", "sessions"), true), KeyDef(8, "⚙", tr("ajustes", "settings"), true),
 )
 

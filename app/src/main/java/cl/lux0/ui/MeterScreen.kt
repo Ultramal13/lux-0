@@ -54,7 +54,7 @@ import cl.lux0.color.Reading
 import java.util.Locale
 import kotlin.math.roundToInt
 
-val MODE_NAMES: Map<Int, String> get() = mapOf(1 to "color", 2 to tr("exposición", "exposure"), 3 to "lux", 4 to tr("parpadeo", "flicker"), 5 to tr("comparar", "compare"), 7 to tr("sesiones", "sessions"), 8 to tr("ajustes", "settings"), 9 to tr("calibrar", "calibrate"), 10 to tr("ayuda", "help"))
+val MODE_NAMES: Map<Int, String> get() = mapOf(1 to "color", 2 to tr("exposición", "exposure"), 3 to "lux", 4 to tr("parpadeo", "flicker"), 5 to tr("comparar", "compare"), 6 to tr("mapa", "map"), 7 to tr("sesiones", "sessions"), 8 to tr("ajustes", "settings"), 9 to tr("calibrar", "calibrate"), 10 to tr("ayuda", "help"))
 
 @Composable
 fun Header(mode: Int, theme: String, onTheme: () -> Unit, onHelp: () -> Unit = {}) {
@@ -293,6 +293,7 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, modifier: Modifier = Modifier, 
         val active = !st.idle && !st.hot && !st.hold
         if (fill) {
             Viewfinder(vm, Modifier.fillMaxWidth().weight(1f), active, st.retry, overlay = {
+                if (st.mode == 6) MapOverlay(st.map, vm.mapReference(), vm.previewAspect())
                 Box(
                     Modifier.align(Alignment.BottomStart).padding(6.dp).clip(RoundedCornerShape(6.dp))
                         .background(p.screen.copy(alpha = 0.7f)).padding(horizontal = 8.dp, vertical = 4.dp),
@@ -314,6 +315,7 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, modifier: Modifier = Modifier, 
             2 -> tr("apunta el círculo al sujeto o a una tarjeta gris", "aim the circle at the subject or a gray card")
             4 -> tr("apunta a una zona iluminada por la luz que quieres revisar", "aim at an area lit by the light you want to check")
             5 -> tr("mide la luz a, luego la b, sobre la misma hoja", "measure light a, then b, on the same sheet")
+            6 -> tr("naranja = más cálida · azul = más fría · ≈ estimado", "orange = warmer · blue = cooler · ≈ estimated")
             else -> SOURCE_HINTS[st.source]
         }
         Text(alert ?: hint, style = mono(11, if (alert != null) p.accent else p.screenDim),
@@ -484,4 +486,64 @@ fun FlickerInfoRow(vm: MeterViewModel) {
             "${vm.prefs.mainsHz * 2} hz · " + tr("cambia fps u obturación en la tarjeta", "change fps or shutter in the card"),
         style = mono(10, p.text), modifier = Modifier.padding(top = 8.dp, bottom = 6.dp),
     )
+}
+
+/** Celdas del mapa sobre el visor: naranja más cálida, azul más fría que la referencia. */
+@Composable
+fun MapOverlay(map: cl.lux0.color.LightMap?, refK: Double?, aspect: Float) {
+    val p = LocalPalette.current
+    if (map == null || refK == null) return
+    Canvas(Modifier.fillMaxSize()) {
+        // El contenido (vertical 3:4) llena el ancho y se recorta arriba y abajo, igual que el visor.
+        val w = size.width
+        val contentH = w * aspect
+        val top = (size.height - contentH) / 2
+        val cw = w / map.cols; val ch = contentH / map.rows
+        for (row in 0 until map.rows) for (col in 0 until map.cols) {
+            val k = map.at(col, row)
+            val x = col * cw; val y = top + row * ch
+            if (k.isNaN()) {
+                drawRect(androidx.compose.ui.graphics.Color.Gray.copy(alpha = 0.18f), Offset(x, y), androidx.compose.ui.geometry.Size(cw, ch))
+                continue
+            }
+            val d = cl.lux0.color.LightMap.warmth(k, refK)
+            val a = (cl.lux0.color.LightMap.strength(d) * 0.6).toFloat()
+            if (p.red) {
+                // Noche roja: sin colores; triángulo hacia arriba = más cálida, hacia abajo = más fría.
+                if (a > 0.06f) {
+                    val cx = x + cw / 2; val cy = y + ch / 2; val r = minOf(cw, ch) * 0.25f
+                    val path = androidx.compose.ui.graphics.Path().apply {
+                        if (d > 0) { moveTo(cx, cy - r); lineTo(cx - r, cy + r); lineTo(cx + r, cy + r) }
+                        else { moveTo(cx, cy + r); lineTo(cx - r, cy - r); lineTo(cx + r, cy - r) }
+                        close()
+                    }
+                    drawPath(path, p.screenText.copy(alpha = 0.3f + a))
+                }
+            } else {
+                val color = if (d > 0) androidx.compose.ui.graphics.Color(0xFFFF8A3D) else androidx.compose.ui.graphics.Color(0xFF4DA3FF)
+                drawRect(color.copy(alpha = a), Offset(x, y), androidx.compose.ui.geometry.Size(cw, ch))
+            }
+            drawRect(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.25f), Offset(x, y), androidx.compose.ui.geometry.Size(cw, ch), style = Stroke(1f))
+        }
+    }
+}
+
+/** Leyenda del mapa: qué se usa como referencia. */
+@Composable
+fun MapLegend(vm: MeterViewModel) {
+    val p = LocalPalette.current
+    val ref = vm.prefs.targetK.takeIf { it > 0 }
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp)) {
+        Text(
+            tr("referencia: ", "reference: ") + (ref?.let { tr("objetivo ", "target ") + "$it k" } ?: tr("la luz del círculo", "the light in the circle")),
+            style = mono(12, p.text, true),
+        )
+        Text(
+            tr("cada celda compara su luz con la referencia: naranja = más cálida, azul = más fría; gris = sin dato (oscura, quemada o de color propio). " +
+                "depende del color de las superficies, así que es una guía rápida.",
+                "each cell compares its light with the reference: orange = warmer, blue = cooler; gray = no data (dark, clipped or colored surface). " +
+                "it depends on surface colors, so it is a quick guide."),
+            style = mono(10, p.text), modifier = Modifier.padding(top = 4.dp),
+        )
+    }
 }

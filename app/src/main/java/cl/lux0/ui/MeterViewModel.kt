@@ -70,6 +70,8 @@ data class UiState(
     /** Comparar: lecturas congeladas de la luz A y la B. */
     val compareA: Reading? = null,
     val compareB: Reading? = null,
+    /** Mapa de luces mezcladas (modo 6). */
+    val map: cl.lux0.color.LightMap? = null,
 )
 
 /** Detecta el emulador de Android (la cámara virtual no permite medir color). */
@@ -107,7 +109,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
         while (true) {
             delay(prefs.intervalMs)
             val st = _state.value
-            if (st.hold || st.idle || st.mode !in listOf(1, 2, 3, 4, 5, 9)) continue
+            if (st.hold || st.idle || st.mode !in listOf(1, 2, 3, 4, 5, 6, 9)) continue
             t += 0.15
             val cct = Calibration.apply(4500 + 400 * sin(t) + 60 * sin(t * 3.1), prefs.calOffsetMired)
             val duv = -0.004 + 0.003 * sin(t * 0.7)
@@ -115,7 +117,8 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
             val lux = (420 + 60 * sin(t * 0.9)) * prefs.luxFactor
             _state.update {
                 it.copy(reading = Reading(cct, duv, 0.0, 0.0, false), warning = null, error = null, fresh = true, ev100 = ev, lux = lux,
-                    flickerChecked = true, flicker = cl.lux0.color.Flicker.Result(prefs.mainsHz * 2.0, 0.18))
+                    flickerChecked = true, flicker = cl.lux0.color.Flicker.Result(prefs.mainsHz * 2.0, 0.18),
+                    map = demoMap(t))
             }
         }
     }
@@ -145,7 +148,8 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
                 st.copy(warning = s.warning, error = null, flickerChecked = s.flickerChecked || st.flickerChecked,
                     flicker = if (s.flickerChecked) s.flicker else st.flicker)
             } else {
-                st.copy(reading = s.reading ?: st.reading, warning = s.warning, error = null, fresh = s.reading != null, ev100 = s.ev100 ?: st.ev100)
+                st.copy(reading = s.reading ?: st.reading, warning = s.warning, error = null, fresh = s.reading != null, ev100 = s.ev100 ?: st.ev100,
+                    map = if (st.mode == 6) s.map ?: st.map else st.map)
             }
         }
     }
@@ -175,8 +179,21 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     fun setMode(m: Int) {
         // El modo parpadeo cambia la exposición de la cámara; al salir vuelve a la normal.
         camera.setFlicker(m == 4)
+        camera.mapMode = m == 6
         _state.update { it.copy(mode = m, flickerChecked = if (m == 4) false else it.flickerChecked, flicker = if (m == 4) null else it.flicker) }
     }
+
+    /** Mapa simulado: ventana fría a la izquierda, lámpara cálida a la derecha, algunas celdas oscuras. */
+    private fun demoMap(t: Double): cl.lux0.color.LightMap {
+        val cols = 6; val rows = 8
+        return cl.lux0.color.LightMap(cols, rows, DoubleArray(cols * rows) { i ->
+            val x = i % cols; val y = i / cols
+            if (y == rows - 1 && x % 2 == 0) Double.NaN else 6800 - x * 650 + 150 * sin(t + y) - y * 40
+        })
+    }
+
+    /** Referencia del mapa: el objetivo si existe; si no, la lectura del círculo. */
+    fun mapReference(): Double? = prefs.targetK.takeIf { it > 0 }?.toDouble() ?: _state.value.reading?.cct
 
     // --- comparar ---
     fun measureA() = _state.value.reading?.let { r -> _state.update { it.copy(compareA = r) } }
@@ -298,7 +315,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
             id, store.activeSession().id, id,
             (if (st.demo) tr("demo (simulado) · ", "demo (simulated) · ") else "") + when (st.mode) {
                 2 -> tr("exposición", "exposure"); 3 -> "lux"; 4 -> tr("parpadeo", "flicker")
-                5 -> tr("comparar", "compare"); else -> SOURCES[st.source]
+                5 -> tr("comparar", "compare"); 6 -> tr("mapa", "map"); else -> SOURCES[st.source]
             },
             r?.cct ?: 0.0, r?.duv ?: 0.0,
             c1.label, slotText(1, r), c2.label, slotText(2, r), prefs.cap1, prefs.cap2, path, "",
