@@ -72,6 +72,16 @@
 - **Tus datos se quedan en tu teléfono.** Sesiones, miniaturas y ajustes no se suben al respaldo en la nube ni viajan al cambiar de teléfono.
 - **El CSV sale solo cuando tú lo compartes,** con el botón "exportar csv".
 
+## Aviso
+
+LUX-0 es una **beta** y se entrega **"tal cual"**, sin garantías:
+
+- **Las mediciones son orientativas.** Verifica con tu cámara antes de un trabajo importante.
+- **La usas bajo tu propia responsabilidad.** Bexia no se hace responsable por fallas o calentamiento del teléfono, pérdida de datos ni resultados de trabajos.
+- **Las marcas de cámaras mencionadas** pertenecen a sus dueños y no están afiliadas al proyecto.
+
+Texto completo en [`LICENSE`](LICENSE).
+
 ## Limitaciones conocidas
 
 **Precisión estimada,** en validación justamente con esta beta. Las comparaciones reales se registran en [`docs/validacion.md`](docs/validacion.md); la primera, en un S26 Ultra contra la R5 con Capture One, mostró una desviación de 18 mired sin calibrar, que se corrige con la calibración.
