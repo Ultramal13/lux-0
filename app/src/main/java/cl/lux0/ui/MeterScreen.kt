@@ -54,7 +54,7 @@ import cl.lux0.color.Reading
 import java.util.Locale
 import kotlin.math.roundToInt
 
-val MODE_NAMES: Map<Int, String> get() = mapOf(1 to "color", 7 to tr("sesiones", "sessions"), 8 to tr("ajustes", "settings"), 9 to tr("calibrar", "calibrate"), 10 to tr("ayuda", "help"))
+val MODE_NAMES: Map<Int, String> get() = mapOf(1 to "color", 2 to tr("exposición", "exposure"), 3 to "lux", 7 to tr("sesiones", "sessions"), 8 to tr("ajustes", "settings"), 9 to tr("calibrar", "calibrate"), 10 to tr("ayuda", "help"))
 
 @Composable
 fun Header(mode: Int, theme: String, onTheme: () -> Unit, onHelp: () -> Unit = {}) {
@@ -225,7 +225,11 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, modifier: Modifier = Modifier, 
     val r: Reading? = st.reading
     Column(modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(p.screen).padding(12.dp)) {
         Row {
-            Text("${SOURCES[st.source]} · ${vm.prefs.reflectance}%", style = mono(10, p.screenDim))
+            Text(
+                if (st.mode == 2) tr("exposición reflejada · ", "reflected exposure · ") + "${vm.prefs.reflectance}%"
+                else "${SOURCES[st.source]} · ${vm.prefs.reflectance}%",
+                style = mono(10, p.screenDim),
+            )
             Spacer(Modifier.weight(1f))
             val status = when {
                 st.demo -> "● demo"
@@ -256,13 +260,22 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, modifier: Modifier = Modifier, 
                 )
             }
         }
+        val expo: @Composable () -> Unit = {
+            Column {
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(st.ev100?.let { String.format(Locale.US, "%.1f", vm.sceneEv(it)) } ?: "--", style = mono(36, p.screenText, true))
+                    Text(" ev", style = mono(16, p.screenDim))
+                }
+                Text(tr("escena a iso 100 · ≈ reflejada", "scene at iso 100 · ≈ reflected"), style = mono(9, p.screenDim))
+            }
+        }
         val active = !st.idle && !st.hot && !st.hold
         if (fill) {
             Viewfinder(vm, Modifier.fillMaxWidth().weight(1f), active, st.retry, overlay = {
                 Box(
                     Modifier.align(Alignment.BottomStart).padding(6.dp).clip(RoundedCornerShape(6.dp))
                         .background(p.screen.copy(alpha = 0.7f)).padding(horizontal = 8.dp, vertical = 4.dp),
-                ) { reading(36) }
+                ) { if (st.mode == 2) expo() else reading(36) }
             }, onView = onView)
         } else {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -276,9 +289,11 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, modifier: Modifier = Modifier, 
             st.idle -> tr("en pausa para ahorrar batería · toca la pantalla", "paused to save battery · tap the screen")
             else -> st.error ?: st.warning
         }
-        Text(alert ?: SOURCE_HINTS[st.source], style = mono(11, if (alert != null) p.accent else p.screenDim),
+        val hint = if (st.mode == 2) tr("apunta el círculo al sujeto o a una tarjeta gris", "aim the circle at the subject or a gray card")
+            else SOURCE_HINTS[st.source]
+        Text(alert ?: hint, style = mono(11, if (alert != null) p.accent else p.screenDim),
             modifier = Modifier.padding(top = 8.dp))
-        DotScale(r?.cct)
+        if (st.mode != 2) DotScale(r?.cct)
         Box(Modifier.fillMaxWidth().padding(top = 6.dp).height(1.dp).background(p.screenDim))
         listOf(1, 2).forEach { slot ->
             val cam = vm.cam(slot)
@@ -289,8 +304,11 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, modifier: Modifier = Modifier, 
                 }
                 Text(" " + cam.label + if (!cam.verified) " *" else "", style = mono(12, p.screenText))
                 Spacer(Modifier.weight(1f))
-                Text(r?.let { vm.recText(cam, it) } ?: "—", style = mono(12, p.screenText, true))
+                Text(vm.slotText(slot, r).ifEmpty { "—" }, style = mono(12, p.screenText, true))
             }
+        }
+        if (st.mode == 1) vm.targetText(r)?.let {
+            Text(it, style = mono(12, p.accent, true), modifier = Modifier.padding(top = 6.dp))
         }
     }
 }
@@ -347,5 +365,61 @@ fun CalibrationPanel(vm: MeterViewModel, st: UiState) {
             WideKey(tr("reiniciar", "reset"), false, Modifier.weight(1f)) { vm.resetCalibration(); done = tr("calibración borrada", "calibration cleared") }
         }
         done?.let { Text(it, style = mono(12, p.accent), modifier = Modifier.padding(top = 8.dp)) }
+    }
+}
+
+/** Selector rápido de lo que se apunta en exposición (cambia la corrección por reflectancia). */
+@Composable
+fun ReflectanceRow(vm: MeterViewModel, version: Int) {
+    val p = LocalPalette.current
+    val opts = listOf(18, 90)
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 6.dp)) {
+        Text(tr("qué apuntas", "what you aim at"), style = mono(11, p.text))
+        Seg(listOf(tr("gris 18 %", "gray 18 %"), tr("blanco 90 %", "white 90 %")), opts.indexOf(vm.prefs.reflectance),
+            { vm.prefs.reflectance = opts[it]; vm.bump() }, Modifier.padding(top = 5.dp))
+    }
+}
+
+/** Modo lux: sensor de luz frontal; la cámara queda apagada. */
+@Composable
+fun LuxPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
+    val p = LocalPalette.current
+    val owner = LocalLifecycleOwner.current
+    DisposableEffect(owner) {
+        val obs = LifecycleEventObserver { _, e ->
+            if (e == Lifecycle.Event.ON_RESUME) vm.startLux()
+            if (e == Lifecycle.Event.ON_PAUSE) vm.stopLux()
+        }
+        owner.lifecycle.addObserver(obs)
+        if (owner.lifecycle.currentState.isAtLeast(Lifecycle.State.RESUMED)) vm.startLux()
+        onDispose { owner.lifecycle.removeObserver(obs); vm.stopLux() }
+    }
+    Column(
+        modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(p.screen).padding(16.dp),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Row {
+            Text(tr("sensor de luz frontal", "front light sensor"), style = mono(10, p.screenDim))
+            Spacer(Modifier.weight(1f))
+            Text(if (st.demo) "● demo" else if (st.hold) "■ hold" else tr("● en vivo", "● live"), style = mono(10, p.accent))
+        }
+        Spacer(Modifier.weight(1f))
+        if (!st.luxSensor) {
+            Text(tr("este teléfono no tiene sensor de luz", "this phone has no light sensor"), style = mono(14, p.accent))
+        } else {
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(st.lux?.let { "${it.roundToInt()}" } ?: "----", style = mono(64, p.screenText, true))
+                Text(" lx", style = mono(20, p.screenDim))
+            }
+            Text(st.lux?.let { String.format(Locale.US, "%.1f fc", it / 10.764) } ?: "", style = mono(16, p.screenDim))
+        }
+        Spacer(Modifier.weight(1f))
+        Text(
+            tr("apunta la pantalla del teléfono hacia la luz (el sensor está al frente) · ≈ aproximado",
+                "point the phone's screen at the light (the sensor is on the front) · ≈ approximate"),
+            style = mono(11, if (st.demo) p.accent else p.screenDim),
+        )
+        if (vm.prefs.luxFactor != 1.0) Text(tr("factor de calibración ", "calibration factor ") + String.format(Locale.US, "×%.1f", vm.prefs.luxFactor),
+            style = mono(9, p.screenDim))
     }
 }

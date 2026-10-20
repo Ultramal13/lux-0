@@ -147,6 +147,18 @@ class Prefs(context: Context) {
     var calOffsetMired: Double
         get() = sp.getFloat("calOffset", 0f).toDouble()
         set(v) = sp.edit().putFloat("calOffset", v.toFloat()).apply()
+    /** Temperatura objetivo en K (0 = sin objetivo). */
+    var targetK: Int
+        get() = sp.getInt("targetK", 0)
+        set(v) = sp.edit().putInt("targetK", v).apply()
+    /** Ajuste fino de la exposición medida, en pasos (calibración). */
+    var evCal: Double
+        get() = sp.getFloat("evCal", 0f).toDouble()
+        set(v) = sp.edit().putFloat("evCal", v.toFloat()).apply()
+    /** Factor de calibración del sensor de luz. */
+    var luxFactor: Double
+        get() = sp.getFloat("luxFactor", 1f).toDouble()
+        set(v) = sp.edit().putFloat("luxFactor", v.toFloat()).apply()
     var cap1: CaptureSettings
         get() = CaptureSettings.fromJson(sp.getString("cap1", null)?.let { JSONObject(it) })
         set(v) = sp.edit().putString("cap1", v.toJson().toString()).apply()

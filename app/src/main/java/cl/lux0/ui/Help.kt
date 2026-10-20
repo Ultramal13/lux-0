@@ -40,9 +40,22 @@ private val HELP_ES = listOf(
     "avisos" to
         "zona quemada: el círculo está demasiado brillante, aléjate o cambia el ángulo. " +
         "muy oscuro: falta luz en el círculo. no parece neutro: lo que apuntas tiene color propio o la luz está muy teñida.",
+    "exposición (tecla 2)" to
+        "el teléfono mide el círculo y la app calcula el ev de la escena (a iso 100). con los ajustes de cada tarjeta de cámara " +
+        "(iso, obturación, nd, ev) te dice qué diafragma usar, o si ya fijaste uno, cuántos pasos sobran o faltan. " +
+        "elige \"qué apuntas\": gris 18 % o blanco 90 %. con obturación auto (como la luna) la cámara decide: ajusta con comp. ev. " +
+        "es medición reflejada: ≈ ±⅓–½ paso tras calibrar.",
+    "lux (tecla 3)" to
+        "usa el sensor de luz del frente del teléfono (el del brillo automático): apunta la pantalla hacia la luz. " +
+        "muestra lux y pie-candela. es aproximado y sirve para comparar luces; la cámara queda apagada.",
+    "temperatura objetivo" to
+        "en ajustes eliges la temperatura que quieres (ej. 5600 k). en color aparece \"◎ objetivo\" con el gel para llevar la luz medida a ese valor.",
+    "ajustes de calibración de exposición y lux" to
+        "si comparas con tu cámara o un fotómetro y la app se desvía siempre igual, corrige con \"ajuste de exposición\" (en pasos) " +
+        "y \"factor del sensor de luz\".",
     "reflectancia (%)" to
         "cuánta luz devuelve la superficie que mides: tarjeta gris 18 %, papel blanco ~90 %. " +
-        "no cambia el kelvin; se usará en exposición (etapa 2).",
+        "no cambia el kelvin; sí cambia la exposición sugerida.",
     "intervalo" to
         "cada cuánto se calcula una lectura (0,5 / 1 / 2 s). más largo = menos trabajo y menos calor. " +
         "si el teléfono se entibia, la app sube sola a 3 s.",
@@ -101,9 +114,22 @@ private val HELP_EN = listOf(
     "warnings" to
         "clipped area: the circle is too bright, step back or change the angle. too dark: not enough light in the circle. " +
         "not neutral: what you aim at has its own color, or the light is strongly tinted.",
+    "exposure (key 2)" to
+        "the phone meters the circle and the app computes the scene ev (at iso 100). using each camera card's settings " +
+        "(iso, shutter, nd, ev) it tells you which aperture to use, or, if you already set one, how many stops you are over or under. " +
+        "pick \"what you aim at\": gray 18 % or white 90 %. with auto shutter (like the luna) the camera decides: adjust with ev comp. " +
+        "it is reflected metering: ≈ ±⅓–½ stop after calibration.",
+    "lux (key 3)" to
+        "uses the phone's front light sensor (the auto-brightness one): point the screen at the light. " +
+        "shows lux and foot-candles. it is approximate and useful to compare lights; the camera stays off.",
+    "target temperature" to
+        "in settings you pick the temperature you want (e.g. 5600 k). in color mode \"◎ target\" shows the gel that brings the measured light to it.",
+    "exposure and lux calibration" to
+        "if you compare with your camera or a light meter and the app is always off by the same amount, correct it with \"exposure adjustment\" (in stops) " +
+        "and \"light sensor factor\".",
     "reflectance (%)" to
         "how much light the measured surface returns: gray card 18 %, white paper ~90 %. " +
-        "it does not change kelvin; it will be used for exposure (stage 2).",
+        "it does not change kelvin; it does change the suggested exposure.",
     "interval" to
         "how often a reading is computed (0.5 / 1 / 2 s). longer = less work and less heat. " +
         "if the phone warms up, the app switches to 3 s by itself.",

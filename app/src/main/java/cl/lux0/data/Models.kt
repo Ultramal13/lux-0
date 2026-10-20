@@ -60,12 +60,15 @@ data class Measurement(
     val cap2: CaptureSettings,
     val thumbPath: String?,
     val comment: String,
+    val ev100: Double? = null,
+    val lux: Double? = null,
 ) {
     fun toJson(): JSONObject = JSONObject().put("id", id).put("sessionId", sessionId).put("time", time)
         .put("source", source).put("cct", cct).put("duv", duv)
         .put("cam1", cam1).put("rec1", rec1).put("cam2", cam2).put("rec2", rec2)
         .put("cap1", cap1.toJson()).put("cap2", cap2.toJson())
         .put("thumbPath", thumbPath ?: JSONObject.NULL).put("comment", comment)
+        .put("ev100", ev100 ?: JSONObject.NULL).put("lux", lux ?: JSONObject.NULL)
 
     companion object {
         fun fromJson(o: JSONObject) = Measurement(
@@ -77,6 +80,8 @@ data class Measurement(
             cap2 = CaptureSettings.fromJson(o.optJSONObject("cap2")),
             thumbPath = if (o.isNull("thumbPath")) null else o.optString("thumbPath"),
             comment = o.optString("comment", ""),
+            ev100 = if (o.isNull("ev100")) null else o.optDouble("ev100"),
+            lux = if (o.isNull("lux")) null else o.optDouble("lux"),
         )
     }
 }

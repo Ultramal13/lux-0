@@ -58,6 +58,12 @@ data class UiState(
     val retry: Int = 0,
     /** Emulador: lecturas simuladas, nunca en un teléfono real. */
     val demo: Boolean = false,
+    /** EV100 de la escena según el teléfono (ajustes del AE), para exposición. */
+    val ev100: Double? = null,
+    /** Lux del sensor de luz frontal (ya con el factor de calibración). */
+    val lux: Double? = null,
+    /** false si el teléfono no tiene sensor de luz. */
+    val luxSensor: Boolean = true,
 )
 
 /** Detecta el emulador de Android (la cámara virtual no permite medir color). */
@@ -95,11 +101,15 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
         while (true) {
             delay(prefs.intervalMs)
             val st = _state.value
-            if (st.hold || st.idle || st.mode !in listOf(1, 9)) continue
+            if (st.hold || st.idle || st.mode !in listOf(1, 2, 3, 9)) continue
             t += 0.15
             val cct = Calibration.apply(4500 + 400 * sin(t) + 60 * sin(t * 3.1), prefs.calOffsetMired)
             val duv = -0.004 + 0.003 * sin(t * 0.7)
-            _state.update { it.copy(reading = Reading(cct, duv, 0.0, 0.0, false), warning = null, error = null, fresh = true) }
+            val ev = 10.0 + 0.8 * sin(t * 0.5)
+            val lux = (420 + 60 * sin(t * 0.9)) * prefs.luxFactor
+            _state.update {
+                it.copy(reading = Reading(cct, duv, 0.0, 0.0, false), warning = null, error = null, fresh = true, ev100 = ev, lux = lux)
+            }
         }
     }
 
@@ -124,7 +134,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     private fun onSample(s: Sample) {
         if (_state.value.hold) return
         _state.update { st ->
-            st.copy(reading = s.reading ?: st.reading, warning = s.warning, error = null, fresh = s.reading != null)
+            st.copy(reading = s.reading ?: st.reading, warning = s.warning, error = null, fresh = s.reading != null, ev100 = s.ev100 ?: st.ev100)
         }
     }
 
@@ -145,6 +155,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         power.removeThermalStatusListener(thermal)
+        stopLux()
         camera.release()
     }
 
@@ -219,8 +230,11 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun save(thumb: Bitmap?) {
-        val r = _state.value.reading ?: return
-        if (!r.cct.isFinite() || !r.duv.isFinite()) return
+        val st = _state.value
+        val r = if (st.mode == 3) null else st.reading
+        if (r == null && st.mode != 3) return
+        if (r != null && (!r.cct.isFinite() || !r.duv.isFinite())) return
+        if (st.mode == 3 && st.lux == null) return
         val id = System.currentTimeMillis()
         val path = thumb?.let {
             val f = File(store.thumbDir, "$id.jpg")
@@ -229,13 +243,85 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
         }
         val c1 = cam(1); val c2 = cam(2)
         store.save(Measurement(
-            id, store.activeSession().id, id, if (_state.value.demo) tr("demo (simulado)", "demo (simulated)") else SOURCES[_state.value.source], r.cct, r.duv,
-            c1.label, recText(c1, r), c2.label, recText(c2, r), prefs.cap1, prefs.cap2, path, "",
+            id, store.activeSession().id, id,
+            (if (st.demo) tr("demo (simulado) · ", "demo (simulated) · ") else "") + when (st.mode) {
+                2 -> tr("exposición", "exposure"); 3 -> "lux"; else -> SOURCES[st.source]
+            },
+            r?.cct ?: 0.0, r?.duv ?: 0.0,
+            c1.label, slotText(1, r), c2.label, slotText(2, r), prefs.cap1, prefs.cap2, path, "",
+            ev100 = st.ev100?.let { sceneEv(it) }, lux = if (st.mode == 3) st.lux else null,
         ))
         bump()
     }
 
     // Sin bump(): refrescar recrearía los campos y se perdería el foco al escribir.
+    /** Texto de la fila de cada cámara según el modo actual. */
+    fun slotText(slot: Int, r: Reading?): String = when (_state.value.mode) {
+        2 -> expoText(slot)
+        3 -> ""
+        else -> r?.let { recText(cam(slot), it) } ?: ""
+    }
+
+    /** EV de la escena (gris medio) desde el EV del teléfono, la reflectancia y el ajuste de calibración. */
+    fun sceneEv(phoneEv100: Double): Double =
+        cl.lux0.color.Exposure.sceneEv(phoneEv100, prefs.reflectance.coerceIn(5, 95), calibrationEv = prefs.evCal)
+
+    /** Recomendación de exposición para una cámara con sus ajustes de captura. */
+    fun expoText(slot: Int): String {
+        val ev = _state.value.ev100 ?: return "—"
+        val c = if (slot == 1) prefs.cap1 else prefs.cap2
+        val t = cl.lux0.color.Exposure.shutterSeconds(c.shutter, c.fps)
+            ?: return tr("auto · usa comp. ev", "auto · use ev comp.")
+        val nd = cl.lux0.data.CaptureOptions.ND.firstOrNull { it.first == c.nd }?.second ?: 0
+        val scene = sceneEv(ev)
+        val exact = cl.lux0.color.Exposure.apertureFor(scene, c.iso, t, nd, c.ev)
+        val f = c.fStop
+        val stops = { x: Double -> cl.lux0.data.CaptureOptions.evLabel(Math.round(kotlin.math.abs(x) * 3) / 3.0).removePrefix("+").removePrefix("−") }
+        if (f == null) {
+            return when {
+                exact < 1.2 * 0.94 -> tr("falta luz: f/1.2 y aún ", "not enough light: f/1.2 and still ") +
+                    stops(2 * kotlin.math.ln(1.2 / exact) / kotlin.math.ln(2.0)) + tr(" pasos", " stops")
+                exact > 22 * 1.06 -> tr("sobra luz: f/22 y aún ", "too much light: f/22 and still ") +
+                    stops(2 * kotlin.math.ln(exact / 22) / kotlin.math.ln(2.0)) + tr(" pasos (más nd)", " stops (more nd)")
+                else -> "→ " + cl.lux0.data.CaptureOptions.fLabel(cl.lux0.color.Exposure.nearestStop(exact))
+            }
+        }
+        val off = cl.lux0.color.Exposure.stopsOff(scene, c.iso, t, nd, c.ev, f)
+        return when {
+            kotlin.math.abs(off) < 0.17 -> "✓ " + cl.lux0.data.CaptureOptions.fLabel(f) + tr(" correcto", " correct")
+            off > 0 -> tr("sobran ", "over by ") + stops(off) + tr(" · cierra a ", " · stop down to ") +
+                cl.lux0.data.CaptureOptions.fLabel(cl.lux0.color.Exposure.nearestStop(exact.coerceAtMost(22.0)))
+            else -> tr("faltan ", "under by ") + stops(off) + tr(" · abre a ", " · open to ") +
+                cl.lux0.data.CaptureOptions.fLabel(cl.lux0.color.Exposure.nearestStop(exact.coerceAtLeast(1.2)))
+        }
+    }
+
+    /** "◎ objetivo 5600 → ¼ ctb" cuando hay temperatura objetivo. */
+    fun targetText(r: Reading?): String? {
+        val target = prefs.targetK.takeIf { it > 0 } ?: return null
+        val g = r?.let { cl.lux0.color.Gels.suggest(it.cct, it.duv, target.toDouble()) }
+        return tr("◎ objetivo ", "◎ target ") + "$target" + (g?.let { " → " + it.label } ?: "")
+    }
+
+    // --- sensor de luz (modo lux) ---
+    private val sensors = app.getSystemService(android.hardware.SensorManager::class.java)
+    private val luxListener = object : android.hardware.SensorEventListener {
+        override fun onSensorChanged(e: android.hardware.SensorEvent) {
+            if (_state.value.hold) return
+            _state.update { it.copy(lux = e.values[0] * prefs.luxFactor) }
+        }
+        override fun onAccuracyChanged(s: android.hardware.Sensor?, a: Int) {}
+    }
+
+    fun startLux() {
+        if (IS_EMULATOR) return
+        val sensor = sensors.getDefaultSensor(android.hardware.Sensor.TYPE_LIGHT)
+        if (sensor == null) { _state.update { it.copy(luxSensor = false) }; return }
+        sensors.registerListener(luxListener, sensor, android.hardware.SensorManager.SENSOR_DELAY_NORMAL)
+    }
+
+    fun stopLux() = sensors.unregisterListener(luxListener)
+
     fun setCapture(slot: Int, c: CaptureSettings) {
         if (slot == 1) prefs.cap1 = c else prefs.cap2 = c
     }

@@ -124,7 +124,10 @@ fun HistoryPanel(vm: MeterViewModel, version: Int, modifier: Modifier) {
                         modifier = Modifier.size(58.dp).clip(RoundedCornerShape(6.dp)))
                     else Box(Modifier.size(58.dp).clip(RoundedCornerShape(6.dp)).background(p.screenDim))
                     Column(Modifier.padding(start = 10.dp)) {
-                        Text("${m.cct.roundToInt()} k  ${String.format(Locale.US, "%+.3f", m.duv)}  · ${fmt.format(Date(m.time))}", style = mono(13, p.screenText, true))
+                        Text(
+                            (if (m.cct > 0) "${m.cct.roundToInt()} k  ${String.format(Locale.US, "%+.3f", m.duv)}" else "") +
+                                (m.ev100?.let { String.format(Locale.US, "  ev %.1f", it) } ?: "") +
+                                (m.lux?.let { "  ${it.roundToInt()} lx" } ?: "") + "  · ${fmt.format(Date(m.time))}", style = mono(13, p.screenText, true))
                         Text("① ${m.cam1}: ${m.rec1}", style = mono(10, p.screenText))
                         Text("② ${m.cam2}: ${m.rec2}", style = mono(10, p.screenText))
                         Text("${m.source} · ${m.cap1.label}", style = mono(9, p.screenDim))
@@ -235,6 +238,19 @@ fun SettingsPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
         }
         SettingRow(tr("calibración", "calibration") + " (${if (st.calOffset == 0.0) tr("sin calibrar", "uncalibrated") else tr("calibrado", "calibrated")})") {
             Seg(listOf(tr("calibrar →", "calibrate →")), -1, { vm.setMode(9) })
+        }
+        SettingRow(tr("temperatura objetivo", "target temperature")) {
+            var t by remember { mutableStateOf(vm.prefs.targetK) }
+            Picker(tr("objetivo", "target"), t, listOf(0, 2700, 3200, 4000, 4300, 5000, 5600, 6000, 6500, 7500),
+                { if (it == 0) tr("sin objetivo", "none") else "$it k" }) { t = it; vm.prefs.targetK = it; vm.bump() }
+        }
+        SettingRow(tr("ajuste de exposición (calibración)", "exposure adjustment (calibration)")) {
+            var e by remember { mutableStateOf(vm.prefs.evCal) }
+            Picker("ev", e, (-6..6).map { it / 3.0 }, CaptureOptions::evLabel) { e = it; vm.prefs.evCal = it; vm.bump() }
+        }
+        SettingRow(tr("factor del sensor de luz (calibración)", "light sensor factor (calibration)")) {
+            var f by remember { mutableStateOf(vm.prefs.luxFactor) }
+            Picker("lux", f, (5..20).map { it / 10.0 }, { String.format(Locale.US, "×%.1f", it) }) { f = it; vm.prefs.luxFactor = it; vm.bump() }
         }
         SettingRow(tr("ayuda", "help")) {
             Seg(listOf(tr("qué significa cada cosa →", "what each setting means →")), -1, { vm.setMode(10) })

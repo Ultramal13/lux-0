@@ -33,7 +33,7 @@ import java.util.concurrent.Executor
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
-data class Sample(val reading: Reading?, val warning: String?, val roi: RoiResult?)
+data class Sample(val reading: Reading?, val warning: String?, val roi: RoiResult?, val ev100: Double? = null)
 
 /** Fracción del lado corto del cuadro que mide el círculo. La mira del visor usa la misma. */
 const val ROI_FRACTION = 0.19f
@@ -64,6 +64,7 @@ class MeterCamera(
     private var previewSurface: Surface? = null
     private var chars: CameraCharacteristics? = null
     private var lastProcessed = 0L
+    @Volatile private var lastResult: android.hardware.camera2.CaptureResult? = null
     private val history = ArrayDeque<Pair<Double, Double>>()
 
     @Volatile private var generation = 0
@@ -177,7 +178,11 @@ class MeterCamera(
                         if (gen != generation) { s.close(); return }
                         session = s
                         try {
-                            s.setRepeatingRequest(request(d, preview, yuv), null, handler)
+                            s.setRepeatingRequest(request(d, preview, yuv), object : CameraCaptureSession.CaptureCallback() {
+                                override fun onCaptureCompleted(cs: CameraCaptureSession, req: CaptureRequest, res: android.hardware.camera2.TotalCaptureResult) {
+                                    lastResult = res
+                                }
+                            }, handler)
                         } catch (e: Exception) {
                             Log.w("lux0", "repeating", e)
                             fail(gen, tr("no se pudo iniciar la medición · toca para reintentar", "could not start measuring · tap to retry"))
@@ -259,8 +264,9 @@ class MeterCamera(
                 Plane(p[2].buffer, p[2].rowStride, p[2].pixelStride),
                 img.width, img.height, (minOf(img.width, img.height) * ROI_FRACTION).toInt().coerceAtLeast(8),
             )
+            val ev = phoneEv100(c)
             val warn = roi.warning()
-            if (warn != null || roi.g <= 0.001) { onSample(Sample(null, warn ?: tr("sin señal", "no signal"), roi)); return }
+            if (warn != null || roi.g <= 0.001) { onSample(Sample(null, warn ?: tr("sin señal", "no signal"), roi, ev)); return }
             val cm1 = transform(c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM1))!!
             val cm2 = transform(c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM2)) ?: cm1
             val id = doubleArrayOf(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
@@ -279,11 +285,23 @@ class MeterCamera(
                 abs(r.duv) > 0.02 -> tr("no parece neutro o luz muy teñida", "not neutral, or strongly tinted light")
                 else -> null
             }
-            onSample(Sample(r.copy(cct = Calibration.apply(r.cct, calOffsetMired)), warning, roi))
+            onSample(Sample(r.copy(cct = Calibration.apply(r.cct, calOffsetMired)), warning, roi, ev))
         } catch (e: Exception) {
             Log.w("lux0", "cálculo de color", e)
             onSample(Sample(null, tr("no se pudo calcular", "could not compute"), null))
         }
+    }
+
+    /** EV100 de los ajustes que eligió el AE del teléfono para el círculo (null si aún no hay datos). */
+    private fun phoneEv100(c: CameraCharacteristics): Double? {
+        val res = lastResult ?: return null
+        val t = res.get(android.hardware.camera2.CaptureResult.SENSOR_EXPOSURE_TIME) ?: return null
+        val iso = res.get(android.hardware.camera2.CaptureResult.SENSOR_SENSITIVITY) ?: return null
+        val n = res.get(android.hardware.camera2.CaptureResult.LENS_APERTURE)
+            ?: c.get(CameraCharacteristics.LENS_INFO_AVAILABLE_APERTURES)?.firstOrNull() ?: return null
+        val boost = res.get(android.hardware.camera2.CaptureResult.CONTROL_POST_RAW_SENSITIVITY_BOOST) ?: 100
+        if (t <= 0 || iso <= 0) return null
+        return cl.lux0.color.Exposure.ev100(n.toDouble(), t / 1e9, iso, boost)
     }
 
     /** Cierra sesión, dispositivo, lector y superficie. Solo en el hilo de cámara. */
@@ -296,6 +314,7 @@ class MeterCamera(
         reader = null
         previewSurface?.release()
         previewSurface = null
+        lastResult = null
         history.clear()
     }
 }
