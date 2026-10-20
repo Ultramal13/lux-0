@@ -53,7 +53,7 @@
 
 **Además:**
 - **Sesiones por rodaje:** cada medición se guarda con hora, miniatura, comentario y ajustes de cámara. Se exportan a **CSV** para el colorista.
-- **Base de cámaras:** Canon R5 e Insta360 Luna Ultra verificadas, más **cámaras personalizadas**. Los ajustes de captura (ISO, fps, obturación, f/, ND y EV) se eligen de listas.
+- **50 cámaras** de Canon, Sony, Nikon, Fujifilm, Panasonic, Blackmagic, GoPro e Insta360, con datos tomados de los manuales oficiales (las que llevan **\*** tienen algún dato que el fabricante no publica), más **cámaras personalizadas**. Cada marca corrige el tinte a su manera (G/M, R/B o Tint) y la app te lo da en esas unidades. Los ajustes de captura (ISO, fps, obturación, f/, ND y EV) se eligen de listas.
 - **Temperatura objetivo** con el gel para llegar a ella.
 - **Calibración** contra tu propia cámara (foto RAW de una hoja blanca), más ajustes finos de exposición y lux.
 - **Temas** claro, oscuro y **noche rojo** para sets a oscuras.
@@ -87,7 +87,8 @@
 - **Mapa y modo escena** dependen del color de las superficies: son una guía.
 - **Lux** depende del sensor de cada teléfono: úsalo para comparar.
 - **Parpadeo** necesita que el teléfono permita exposición manual e informe su tiempo de lectura. Si no, la app lo avisa.
-- Solo **R5 y Luna Ultra** vienen verificadas. Para otras cámaras usa "+ cámara personalizada", y si nos envías sus datos (rango de K, paso e ISO máximo) las agregamos.
+- **DJI** no aparece porque sus manuales no publican el rango de Kelvin. **Sony** no publica de cuánto en cuánto sube el Kelvin, así que sus modelos llevan \*. Si tu cámara no está o ves un dato malo, usa "+ cámara personalizada" y cuéntanos sus datos (rango de K, paso e ISO máximo) para agregarla.
+- El **tinte** en unidades de cada cámara es aproximado (≈): ningún fabricante publica la equivalencia exacta.
 
 ---
 

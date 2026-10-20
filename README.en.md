@@ -53,7 +53,7 @@
 
 **Also included:**
 - **Sessions per shoot.** Each reading is saved with time, thumbnail, comment, and camera settings. Sessions export to **CSV** for the colorist.
-- **Camera database:** Canon R5 and Insta360 Luna Ultra (verified), plus **custom cameras**. Capture settings (ISO, fps, shutter, f-stop, ND, and EV) are picked from lists.
+- **50 cameras** from Canon, Sony, Nikon, Fujifilm, Panasonic, Blackmagic, GoPro, and Insta360, with data taken from official manuals (models marked **\*** have some value the manufacturer does not publish), plus **custom cameras**. Each brand corrects tint differently (G/M, R/B, or Tint), and the app gives it to you in those units. Capture settings (ISO, fps, shutter, f-stop, ND, and EV) are picked from lists.
 - **Target temperature,** with the gel needed to reach it.
 - **Calibration** against your own camera (a raw photo of a white sheet), plus fine adjustments for exposure and lux.
 - **Themes:** light, dark, and **red night** for dark sets.
@@ -87,7 +87,8 @@
 - **Map and scene mode** depend on surface colors, so treat them as a guide.
 - **Lux** depends on each phone's sensor. Use it to compare lights.
 - **Flicker** needs a phone that allows manual exposure and reports its readout time. If it does not, the app tells you.
-- Only the **R5 and Luna Ultra** ship verified. For other cameras, use "+ custom camera", and send us the data (K range, step, and max ISO) so we can add them.
+- **DJI** is not listed, because its manuals do not publish the Kelvin range. **Sony** does not publish its Kelvin step, so its models carry a \*. If your camera is missing or a value looks wrong, use "+ custom camera" and send us its data (K range, step, and max ISO) so we can add it.
+- **Tint** in each camera's units is approximate (≈), because no manufacturer publishes the exact equivalence.
 
 ---
 

@@ -228,7 +228,6 @@ fun SettingsPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
     val p = LocalPalette.current
     var custom by remember { mutableStateOf(false) }
     Column(modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
-        Text(tr("* datos sin verificar con el fabricante", "* data not verified with the manufacturer"), style = mono(9, p.text.copy(alpha = 0.6f)))
         Text(tr("+ nueva cámara personalizada", "+ new custom camera"), style = mono(12, p.accent, true),
             modifier = Modifier.clickable { custom = true }.padding(vertical = 8.dp))
         SettingRow(tr("formato del tinte", "tint format")) {
@@ -344,12 +343,22 @@ fun CameraCards(vm: MeterViewModel, version: Int) {
                     Box {
                         Text("  " + tr("cámara", "camera") + " $slot: ${cam.label}${if (!cam.verified) " *" else ""}  ▾", style = mono(13, p.keyText, true),
                             modifier = Modifier.clickable { open = true }.padding(vertical = 4.dp))
-                        DropdownMenu(open, { open = false }, containerColor = p.body) {
-                            vm.cameras.forEach { c ->
+                        DropdownMenu(open, { open = false }, containerColor = p.body, modifier = Modifier.heightIn(max = 440.dp)) {
+                            // Agrupadas por marca: un título por marca y luego sus modelos.
+                            vm.cameras.groupBy { it.brand }.toSortedMap(String.CASE_INSENSITIVE_ORDER).forEach { (brand, list) ->
                                 DropdownMenuItem(
-                                    text = { Text(c.label + if (!c.verified) " *" else "", style = mono(13, p.text, c.id == cam.id)) },
-                                    onClick = { vm.selectCam(slot, c.id); open = false },
+                                    text = { Text(brand.lowercase(), style = mono(11, p.text.copy(alpha = 0.55f), true)) },
+                                    onClick = {}, enabled = false,
                                 )
+                                list.sortedBy { it.model.lowercase() }.forEach { c ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text("  " + c.model.lowercase() + if (!c.verified) " *" else "",
+                                                style = mono(13, if (c.id == cam.id) p.accent else p.text, c.id == cam.id))
+                                        },
+                                        onClick = { vm.selectCam(slot, c.id); open = false },
+                                    )
+                                }
                             }
                             DropdownMenuItem(
                                 text = { Text(tr("+ cámara personalizada…", "+ custom camera…"), style = mono(13, p.accent, true)) },

@@ -27,6 +27,7 @@ Antes de cambiar algo, lee:
 - **No instales ni pruebes en el teléfono sin que el titular lo pida.** El emulador sí se puede usar libremente.
 - **Calor:** la v0.1, que capturaba RAW a resolución completa cada segundo, calentó el teléfono. No vuelvas a capturas RAW o de resolución completa periódicas. Mantén el flujo YUV 640x480, los fps bajos, la protección térmica, la pausa automática y que hold apague la cámara.
 - **Diseño propio:** no copies el aspecto, nombres ni marcas de otras apps o medidores.
+- **Base de cámaras (2026-10-20):** 50 modelos investigados en manuales oficiales (`cameras.json`, con `source` por modelo). Sistemas de K: `STEP`, `MIRED` (Nikon) y `LIST` (GoPro). Sistemas de tinte: `GM`, `GM_DIR` (Panasonic), `RB` (Fujifilm) y `NUMERIC` (Blackmagic, C70). `duvPerUnit` es aproximado. DJI se excluyó porque no publica el rango.
 - **Datos de cámaras:** cada modelo de `app/src/main/assets/cameras.json` debe venir del manual o de una fuente oficial. Si no se pudo verificar, va con `"verified": false` (se muestra con `*`). No inventes rangos.
 - **Seguridad y datos (revisión del 2026-10-20):**
   - Sin internet y sin respaldo en la nube (`allowBackup=false` + `data_extraction_rules.xml`).

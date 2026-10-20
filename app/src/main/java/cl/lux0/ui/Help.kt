@@ -76,7 +76,9 @@ private val HELP_ES = listOf(
     "datos de una cámara" to
         "k mínimo / k máximo: rango de temperatura que acepta. paso: de cuánto en cuánto cambia (canon r5: 100 k); " +
         "la recomendación se redondea a ese paso. tinte: si tiene corrección verde/magenta. " +
-        "iso máximo: limita la lista de iso de esa cámara.",
+        "iso máximo: limita la lista de iso de esa cámara. el tinte depende de la marca: canon, nikon y sony usan eje g/m (≈g2, ≈m0.5); " +
+        "fujifilm usa r y b (≈r-2 b-2 = hacia verde); blackmagic usa un número de tint; panasonic solo indica la dirección (→g / →m). " +
+        "dji no aparece porque sus manuales no publican el rango de kelvin.",
     "captura (iso, fps, obturación, f/, nd, ev)" to
         "cómo está configurada tu cámara al medir. se guarda con cada medición y sale en el csv para el colorista. " +
         "comp. ev = compensación de exposición: no cambia el kelvin, pero en cámaras de diafragma fijo con exposición " +
@@ -161,7 +163,9 @@ private val HELP_EN = listOf(
     "camera data" to
         "min k / max k: the temperature range it accepts. step: how much it changes per click (canon r5: 100 k); " +
         "the recommendation is rounded to that step. tint: whether it has green/magenta correction. " +
-        "max iso: limits that camera's iso list.",
+        "max iso: limits that camera's iso list. tint depends on the brand: canon, nikon and sony use a g/m axis (≈g2, ≈m0.5); " +
+        "fujifilm uses r and b (≈r-2 b-2 = toward green); blackmagic uses a tint number; panasonic shows only the direction (→g / →m). " +
+        "dji is not listed because its manuals do not publish the kelvin range.",
     "capture (iso, fps, shutter, f/, nd, ev)" to
         "how your camera is set while measuring. it is saved with each reading and goes into the csv for the colorist. " +
         "ev comp. = exposure compensation: it does not change kelvin, but on fixed-aperture cameras with auto exposure " +
