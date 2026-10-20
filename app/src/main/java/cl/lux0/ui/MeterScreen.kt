@@ -80,7 +80,16 @@ fun Header(mode: Int, theme: String, onTheme: () -> Unit, onHelp: () -> Unit = {
  * pausa por inactividad ni por calor.
  */
 @Composable
-fun Viewfinder(vm: MeterViewModel, size: androidx.compose.ui.unit.Dp, active: Boolean, retry: Int, onToggle: () -> Unit, onView: (TextureView?) -> Unit) {
+fun Viewfinder(
+    vm: MeterViewModel,
+    width: androidx.compose.ui.unit.Dp,
+    height: androidx.compose.ui.unit.Dp,
+    active: Boolean,
+    retry: Int,
+    onToggle: () -> Unit,
+    overlay: @Composable androidx.compose.foundation.layout.BoxScope.() -> Unit = {},
+    onView: (TextureView?) -> Unit,
+) {
     val p = LocalPalette.current
     val owner = LocalLifecycleOwner.current
     var texture by remember { mutableStateOf<SurfaceTexture?>(null) }
@@ -98,18 +107,18 @@ fun Viewfinder(vm: MeterViewModel, size: androidx.compose.ui.unit.Dp, active: Bo
     LaunchedEffect(run, texture, retry) {
         if (run) vm.startCamera(texture!!) else vm.stopCamera()
     }
-    Box(Modifier.size(size).clip(RoundedCornerShape(8.dp)).background(p.screenDim).clickable(onClick = onToggle)) {
+    Box(Modifier.size(width, height).clip(RoundedCornerShape(8.dp)).background(p.screenDim).clickable(onClick = onToggle)) {
         AndroidView(
             factory = { ctx ->
                 TextureView(ctx).apply {
                     val aspect = vm.previewAspect()
                     surfaceTextureListener = object : TextureView.SurfaceTextureListener {
                         override fun onSurfaceTextureAvailable(st: SurfaceTexture, w: Int, h: Int) {
-                            setTransform(Matrix().apply { setScale(1f, aspect, w / 2f, h / 2f) })
+                            setTransform(Matrix().apply { setScale(1f, w * aspect / h, w / 2f, h / 2f) })
                             texture = st
                         }
                         override fun onSurfaceTextureSizeChanged(st: SurfaceTexture, w: Int, h: Int) {
-                            setTransform(Matrix().apply { setScale(1f, aspect, w / 2f, h / 2f) })
+                            setTransform(Matrix().apply { setScale(1f, w * aspect / h, w / 2f, h / 2f) })
                         }
                         override fun onSurfaceTextureDestroyed(st: SurfaceTexture): Boolean {
                             texture = null; vm.stopCamera(); return true
@@ -131,6 +140,7 @@ fun Viewfinder(vm: MeterViewModel, size: androidx.compose.ui.unit.Dp, active: Bo
             drawLine(line, Offset(c.x, c.y - r - 10), Offset(c.x, c.y + r + 10), 1.dp.toPx())
             drawLine(line, Offset(c.x - r - 10, c.y), Offset(c.x + r + 10, c.y), 1.dp.toPx())
         }
+        overlay()
         if (!active) Box(Modifier.fillMaxSize().background(p.screen.copy(alpha = 0.7f)), contentAlignment = Alignment.Center) {
             Text("■", style = mono(22, p.screenText))
         }
@@ -230,19 +240,22 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
             Text(status, style = mono(10, p.accent))
         }
         Spacer(Modifier.height(8.dp))
-        // Un toque en el visor lo amplía al ancho de la pantalla negra (media pantalla) y otro lo achica.
+        // Un toque en el visor lo amplía: todo el ancho y ~¼ de la altura de pantalla, con el número encima,
+        // para que fuente y tarjetas de cámara sigan visibles. Otro toque lo achica.
         // El visor queda siempre en la misma posición del árbol para que la cámara no se reinicie.
         var big by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+        val screenH = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp
         BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val vf by androidx.compose.animation.core.animateDpAsState(if (big) maxWidth else 132.dp, label = "visor")
+            val vfW by androidx.compose.animation.core.animateDpAsState(if (big) maxWidth else 132.dp, label = "visor-ancho")
+            val vfH by androidx.compose.animation.core.animateDpAsState(if (big) (screenH * 0.26f).dp else 132.dp, label = "visor-alto")
             val reading: @Composable (Int) -> Unit = { size ->
                 Column {
                     Row(verticalAlignment = Alignment.Bottom) {
                         Text(r?.let { "${it.cct.roundToInt()}" } ?: "----", style = mono(size, p.screenText, true))
-                        if (big) Text(" k", style = mono(18, p.screenDim))
+                        if (big) Text(" k", style = mono(16, p.screenDim))
                     }
                     if (!big) Text("k" + if (st.source == 2) tr("  ≈ estimado", "  ≈ estimated") else "", style = mono(13, p.screenDim))
-                    Spacer(Modifier.height(4.dp))
+                    if (!big) Spacer(Modifier.height(4.dp))
                     Text(r?.let { tintText(it.duv) } ?: "", style = mono(12, if (r != null && r.duv > 0) p.green else p.magenta))
                     Text(
                         (if (st.calOffset == 0.0) tr("sin calibrar", "uncalibrated") else tr("calibrado", "calibrated")) +
@@ -251,12 +264,14 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
                     )
                 }
             }
-            Column {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Viewfinder(vm, vf, !st.idle && !st.hot && !st.hold, st.retry, { big = !big }, onView)
-                    if (!big) { Spacer(Modifier.width(12.dp)); reading(44) }
-                }
-                if (big) Box(Modifier.padding(top = 10.dp)) { reading(56) }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Viewfinder(vm, vfW, vfH, !st.idle && !st.hot && !st.hold, st.retry, { big = !big }, overlay = {
+                    if (big) Box(
+                        Modifier.align(Alignment.BottomStart).padding(6.dp).clip(RoundedCornerShape(6.dp))
+                            .background(p.screen.copy(alpha = 0.7f)).padding(horizontal = 8.dp, vertical = 4.dp),
+                    ) { reading(36) }
+                }, onView = onView)
+                if (!big) { Spacer(Modifier.width(12.dp)); reading(44) }
             }
         }
         val alert = when {
@@ -288,7 +303,7 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, onView: (TextureView?) -> Unit)
 @Composable
 fun SourceRow(st: UiState, onSelect: (Int) -> Unit) {
     val p = LocalPalette.current
-    Column(Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 10.dp)) {
+    Column(Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 6.dp)) {
         Text(tr("fuente de medición", "measuring source"), style = mono(11, p.text))
         Seg(SOURCES, st.source, onSelect, Modifier.padding(top = 5.dp))
     }

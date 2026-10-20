@@ -299,11 +299,11 @@ fun CameraCards(vm: MeterViewModel, version: Int) {
     val p = LocalPalette.current
     var custom by remember { mutableStateOf(false) }
     var editing by remember { mutableStateOf(0) }
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         listOf(1, 2).forEach { slot ->
             val cam = vm.cam(slot)
             var open by remember { mutableStateOf(false) }
-            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.key).padding(10.dp)) {
+            Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(p.key).padding(horizontal = 10.dp, vertical = 6.dp)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(18.dp).clip(RoundedCornerShape(9.dp)).background(p.knobs[slot - 1]),
                         contentAlignment = Alignment.Center) {
@@ -331,7 +331,7 @@ fun CameraCards(vm: MeterViewModel, version: Int) {
                 Text(
                     "${cap.iso} iso · ${CaptureOptions.fpsLabel(cap.fps)}p · ${cap.shutter} · ${CaptureOptions.fLabel(cap.fStop)} · ${cap.nd.ifBlank { tr("sin nd", "no nd") }}${if (cap.ev != 0.0) " · ev " + CaptureOptions.evLabel(cap.ev) else ""}  ✎",
                     style = mono(12, p.keyText),
-                    modifier = Modifier.fillMaxWidth().padding(top = 6.dp).clickable { editing = slot }.padding(vertical = 4.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 2.dp).clickable { editing = slot }.padding(vertical = 2.dp),
                 )
             }
         }
