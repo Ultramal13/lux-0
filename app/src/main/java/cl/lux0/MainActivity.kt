@@ -92,7 +92,22 @@ fun App(vm: MeterViewModel = viewModel()) {
     var granted by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
     }
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted = it }
+    // Rechazado sin opción a volver a preguntar (o diálogo cerrado): el botón abre los ajustes de la app.
+    var blocked by remember { mutableStateOf(false) }
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
+        granted = ok
+        if (!ok) blocked = (ctx as? android.app.Activity)?.shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) != true
+    }
+    // Al volver de los ajustes del teléfono se revisa de nuevo el permiso.
+    val owner = androidx.compose.ui.platform.LocalLifecycleOwner.current
+    androidx.compose.runtime.DisposableEffect(owner) {
+        val obs = androidx.lifecycle.LifecycleEventObserver { _, e ->
+            if (e == androidx.lifecycle.Lifecycle.Event.ON_RESUME)
+                granted = ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        }
+        owner.lifecycle.addObserver(obs)
+        onDispose { owner.lifecycle.removeObserver(obs) }
+    }
     // Primero el aviso: sin aceptarlo no se pide la cámara ni se muestra la app.
     var accepted by remember { mutableStateOf(vm.prefs.termsAccepted >= TERMS_VERSION) }
     LaunchedEffect(accepted) { if (accepted && !granted && vm.compat != Compat.NONE) launcher.launch(Manifest.permission.CAMERA) }
@@ -121,8 +136,15 @@ fun App(vm: MeterViewModel = viewModel()) {
                 // En color la pantalla negra se estira (el visor llena el espacio libre); en calibración no.
                 val screenMod = if (fill) Modifier.weight(1f) else Modifier
                 if (granted) BlackScreen(vm, st, screenMod, fill) { textureView = it }
-                else Box(screenMod.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(14.dp)).background(palette.screen).padding(16.dp)) {
-                    Text(tr("lux-0 necesita la cámara para medir.\nvuelve a abrir la app para dar el permiso.", "lux-0 needs the camera to measure.\nreopen the app to grant permission."), style = mono(13, palette.screenText))
+                else Column(screenMod.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(14.dp)).background(palette.screen).padding(16.dp)) {
+                    Text(tr("lux-0 necesita la cámara para medir.", "lux-0 needs the camera to measure."), style = mono(13, palette.screenText))
+                    if (blocked) Text(tr("actívala en ajustes → permisos → cámara.", "turn it on in settings → permissions → camera."),
+                        style = mono(11, palette.screenText.copy(alpha = 0.7f)), modifier = Modifier.padding(top = 4.dp))
+                    cl.lux0.ui.Seg(listOf(if (blocked) tr("abrir ajustes →", "open settings →") else tr("dar permiso →", "grant permission →")), -1, {
+                        if (blocked) ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            android.net.Uri.fromParts("package", ctx.packageName, null)))
+                        else launcher.launch(Manifest.permission.CAMERA)
+                    }, Modifier.padding(top = 12.dp))
                 }
                 if (fill) {
                     when (st.mode) {

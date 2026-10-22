@@ -329,9 +329,11 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, modifier: Modifier = Modifier, 
                     contentAlignment = Alignment.Center) {
                     Text("$slot", style = mono(10, if (p.red) p.screenText else androidx.compose.ui.graphics.Color.Black, true))
                 }
-                Text(" " + cam.label + if (!cam.verified) " *" else "", style = mono(12, p.screenText))
-                Spacer(Modifier.weight(1f))
-                Text(vm.slotText(slot, r).ifEmpty { "—" }, style = mono(12, p.screenText, true))
+                Text(" " + cam.label + if (!cam.verified) " *" else "", style = mono(12, p.screenText), maxLines = 1)
+                // El valor ocupa el resto y, si es largo (avisos del asistente), baja de línea alineado a la derecha.
+                Text(vm.slotText(slot, r).ifEmpty { "—" }, style = mono(12, p.screenText, true),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End,
+                    modifier = Modifier.weight(1f).padding(start = 10.dp))
             }
         }
         if (st.mode == 1) vm.targetText(r)?.let {
