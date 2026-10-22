@@ -19,8 +19,8 @@ android {
         applicationId = "cl.lux0"
         minSdk = 31
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.3.2-beta"
+        versionCode = 7
+        versionName = "0.3.3-beta"
     }
     signingConfigs {
         if (signingProps.containsKey("storeFile")) {
