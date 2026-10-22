@@ -6,6 +6,13 @@ Comparaciones reales de LUX-0 contra una referencia. Los betatesters pueden suma
 
 ---
 
+## Teléfonos probados · Tested phones
+
+| Fecha | Teléfono | Android | Versión | Resultado | Nota |
+|---|---|---|---|---|---|
+| 2026-10-20 | Samsung Galaxy S26 Ultra | 17 | v0.2–v0.3.1 | Todas las herramientas funcionan | Equipo de desarrollo |
+| 2026-10-21 | Sony Xperia 1 III | 13 | v0.3.x | Abre y mide en vivo (exposición: 14,3 EV en exterior, interfaz en inglés) | El permiso de cámara no se pidió al instalar: se activó a mano en Ajustes |
+
 ## Color (Kelvin)
 
 | Fecha | Teléfono | Luz | Referencia | LUX-0 sin calibrar | Diferencia | Nota |

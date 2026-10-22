@@ -18,13 +18,13 @@
 
 1. Entra a **[Releases](https://github.com/Ultramal13/lux-0/releases)** y descarga el APK más reciente (`LUX-0-v0.3.1-beta.apk`).
 2. Ábrelo en tu Android. Si el teléfono lo pide, permite **"instalar apps desconocidas"** para tu navegador o administrador de archivos.
-3. Abre LUX-0 y acepta el permiso de **cámara**, que es el único que pide.
+3. Abre LUX-0 y acepta el permiso de **cámara**, que es el único que pide. Si no aparece la solicitud, actívalo en **Ajustes → Aplicaciones → LUX-0 → Permisos → Cámara**.
 
 **Requisitos:**
 - Android 12 o superior.
 - Una cámara que permita **controlar el color manualmente**. La mayoría de los teléfonos de gama media y alta lo permiten; si el tuyo no, la app lo avisa en pantalla.
 
-**Probado en:** Samsung Galaxy S26 Ultra (Android 17). ¡Cuéntanos cómo funciona en el tuyo!
+**Probado en:** Samsung Galaxy S26 Ultra (Android 17) y Sony Xperia 1 III (Android 13). ¡Cuéntanos cómo funciona en el tuyo!
 
 ---
 
