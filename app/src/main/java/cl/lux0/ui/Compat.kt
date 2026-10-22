@@ -23,8 +23,11 @@ fun detectCompat(context: Context): Compat {
         } ?: return Compat.NONE
         val c = cm.getCameraCharacteristics(id)
         val caps = c.get(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES) ?: intArrayOf()
+        // Sin el permiso de cámara, Android (10+) oculta las matrices de color: solo se revisan si ya hay permiso.
+        val permitted = context.checkSelfPermission(android.Manifest.permission.CAMERA) ==
+            android.content.pm.PackageManager.PERMISSION_GRANTED
         if (CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_POST_PROCESSING !in caps ||
-            c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM1) == null
+            (permitted && c.get(CameraCharacteristics.SENSOR_COLOR_TRANSFORM1) == null)
         ) return Compat.NONE
         val am = context.getSystemService(ActivityManager::class.java)
         val mem = ActivityManager.MemoryInfo().also { am.getMemoryInfo(it) }

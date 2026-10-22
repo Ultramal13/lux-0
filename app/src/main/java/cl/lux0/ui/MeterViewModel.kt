@@ -6,6 +6,8 @@ import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.os.PowerManager
 import android.os.SystemClock
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.delay
@@ -90,8 +92,14 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
     var cameras: List<CameraProfile> = store.allCameras()
         private set
 
-    /** Compatibilidad del teléfono (se revisa una vez al abrir). */
-    val compat: Compat = detectCompat(app)
+    /** Compatibilidad del teléfono: se revisa al abrir y otra vez cuando se concede el permiso de cámara. */
+    var compat: Compat by androidx.compose.runtime.mutableStateOf(detectCompat(app))
+        private set
+
+    fun refreshCompat() {
+        compat = detectCompat(getApplication())
+        if (_state.value.mode in 1..8 && !compat.allows(_state.value.mode)) _state.update { it.copy(mode = 3) }
+    }
 
     private val camera = MeterCamera(app, ::onSample) { msg -> _state.update { it.copy(error = msg) } }
     @Volatile var lastTouch = SystemClock.elapsedRealtime()

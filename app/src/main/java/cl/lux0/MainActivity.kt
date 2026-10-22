@@ -96,21 +96,26 @@ fun App(vm: MeterViewModel = viewModel()) {
     var blocked by remember { mutableStateOf(false) }
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok ->
         granted = ok
+        if (ok) vm.refreshCompat()
         if (!ok) blocked = (ctx as? android.app.Activity)?.shouldShowRequestPermissionRationale(Manifest.permission.CAMERA) != true
     }
     // Al volver de los ajustes del teléfono se revisa de nuevo el permiso.
     val owner = androidx.compose.ui.platform.LocalLifecycleOwner.current
     androidx.compose.runtime.DisposableEffect(owner) {
         val obs = androidx.lifecycle.LifecycleEventObserver { _, e ->
-            if (e == androidx.lifecycle.Lifecycle.Event.ON_RESUME)
-                granted = ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+            if (e == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                val now = ContextCompat.checkSelfPermission(ctx, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+                if (now && !granted) vm.refreshCompat()
+                granted = now
+            }
         }
         owner.lifecycle.addObserver(obs)
         onDispose { owner.lifecycle.removeObserver(obs) }
     }
     // Primero el aviso: sin aceptarlo no se pide la cámara ni se muestra la app.
     var accepted by remember { mutableStateOf(vm.prefs.termsAccepted >= TERMS_VERSION) }
-    LaunchedEffect(accepted) { if (accepted && !granted && vm.compat != Compat.NONE) launcher.launch(Manifest.permission.CAMERA) }
+    // El permiso se pide siempre: sin él Android oculta datos de la cámara y la compatibilidad saldría mal.
+    LaunchedEffect(accepted) { if (accepted && !granted) launcher.launch(Manifest.permission.CAMERA) }
     var textureView by remember { mutableStateOf<TextureView?>(null) }
     LaunchedEffect(Unit) {
         while (true) { delay(5_000); vm.checkIdle() }
