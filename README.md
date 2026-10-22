@@ -8,7 +8,7 @@
 
 **Medidor de luz para foto y video, para Android.** Usa la cámara y el sensor de luz del celular para medir **temperatura de color (Kelvin), tinte, exposición, lux y parpadeo**. Te dice qué poner en **tus cámaras**: balance de blancos, diafragma y obturación segura.
 
-> **Beta pública v0.3.1 — buscamos betatesters.** 🧪
+> **Beta pública v0.3.2 — buscamos betatesters.** 🧪
 > Todas las herramientas funcionan y están probadas en un Samsung Galaxy S26 Ultra. Necesitamos probarla en **más teléfonos y más luces** para validar la precisión.
 > La app está en **español e inglés** y usa el idioma del teléfono.
 
@@ -16,7 +16,7 @@
 
 ## Instalar la beta
 
-1. Entra a **[Releases](https://github.com/Ultramal13/lux-0/releases)** y descarga el APK más reciente (`LUX-0-v0.3.1-beta.apk`).
+1. Entra a **[Releases](https://github.com/Ultramal13/lux-0/releases)** y descarga el APK más reciente (`LUX-0-v0.3.2-beta.apk`).
 2. Ábrelo en tu Android. Si el teléfono lo pide, permite **"instalar apps desconocidas"** para tu navegador o administrador de archivos.
 3. Abre LUX-0 y acepta el permiso de **cámara**, que es el único que pide. Si no aparece la solicitud, actívalo en **Ajustes → Aplicaciones → LUX-0 → Permisos → Cámara**.
 
