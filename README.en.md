@@ -24,7 +24,7 @@
 - Android 12 or later.
 - A camera that allows **manual color control**. Most mid- and high-end phones do. If yours does not, the app tells you on screen.
 
-**Tested on:** Samsung Galaxy S26 Ultra (Android 17) and Sony Xperia 1 III (Android 13). Tell us how it works on yours!
+**Tested on:** Samsung Galaxy S26 Ultra (Android 17), Sony Xperia 1 III (Android 13) and LG V60 ThinQ (Android 12, the minimum version). Tell us how it works on yours!
 
 ---
 
