@@ -382,6 +382,7 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
             isoMax = p.isoMax ?: 51200, intentEv = prefs.assistIntent + c.ev, video = prefs.assistVideo, fps = c.fps,
             cameraShutterSec = cl.lux0.color.Exposure.shutterSeconds(c.shutter, c.fps), subject = subject,
             tripod = prefs.assistTripod, focalMm = c.focal, crop = c.crop ?: p.crop, stabStops = c.stab,
+            iso = if (c.isoAuto) null else c.iso,
         ))
     }
 
@@ -400,8 +401,10 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
         return when {
             r.stopsOff >= 0.17 -> tr("falta luz (", "not enough light (") + n + tr(" pasos): ", " stops): ") +
                 (r.fixAperture?.let { tr("abre a ", "open to ") + cl.lux0.data.CaptureOptions.fLabel(it) + tr(", ", ", ") } ?: "") +
+                (r.fixIso?.let { tr("sube a iso ", "raise to iso ") + it + ", " } ?: "") +
                 tr("agrega luz o usa trípode", "add light or use a tripod")
             r.stopsOff <= -0.17 -> tr("sobra luz (", "too much light (") + n + tr(" pasos): ", " stops): ") +
+                (r.fixIso?.let { tr("baja a iso ", "lower to iso ") + it + ", " } ?: "") +
                 (r.fixNdStops?.let { s -> cl.lux0.data.CaptureOptions.ND.firstOrNull { it.second >= s }?.first?.let { tr("usa ", "use ") + it } }
                     ?: tr("cierra el diafragma", "stop down"))
             else -> null
@@ -416,6 +419,8 @@ class MeterViewModel(app: Application) : AndroidViewModel(app) {
             ?: return tr("auto · usa comp. ev", "auto · use ev comp.")
         val nd = cl.lux0.data.CaptureOptions.ND.firstOrNull { it.first == c.nd }?.second ?: 0
         val scene = sceneEv(ev)
+        // Con iso auto y sin diafragma hay dos incógnitas: se pide el diafragma.
+        if (c.isoAuto) return tr("iso auto · elige f/ en la tarjeta", "auto iso · pick f/ in the card")
         val exact = cl.lux0.color.Exposure.apertureFor(scene, c.iso, t, nd, c.ev)
         val f = c.fStop
         val stops = { x: Double -> cl.lux0.data.CaptureOptions.evLabel(Math.round(kotlin.math.abs(x) * 3) / 3.0).removePrefix("+").removePrefix("−") }

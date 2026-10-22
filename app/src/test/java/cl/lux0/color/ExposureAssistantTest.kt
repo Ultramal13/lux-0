@@ -67,4 +67,33 @@ class ExposureAssistantTest {
         assertEquals("0,5 s", ExposureAssistant.shutterLabel(0.5))
         assertEquals("2 s", ExposureAssistant.shutterLabel(2.0))
     }
+
+    // ISO fijo en la tarjeta: el asistente no lo cambia; ajusta obturación y avisa cuánto subir o bajar el ISO.
+    private fun photoIso(ev: Double, f: Double, subject: Subject, iso: Int, focal: Int? = 50) =
+        Input(ev, f, 0, 51200, 0.0, false, 24.0, null, subject, false, focal, 1.0, 0, iso = iso)
+
+    @Test fun fixedIsoPhotoAdjustsShutter() {
+        val r = ExposureAssistant.suggest(photoIso(12.0, 4.0, Subject.PERSON, 400))!!
+        assertEquals(400, r.iso)
+        assertEquals("1/1000", ExposureAssistant.shutterLabel(r.shutterSec))
+        assertEquals(0.0, r.stopsOff, 0.17)
+    }
+
+    @Test fun fixedIsoPhotoKeepsIsoWhenDark() {
+        val r = ExposureAssistant.suggest(photoIso(7.0, 2.8, Subject.PERSON, 100, focal = 85))!!
+        assertEquals(100, r.iso)
+        assertEquals("1/250", ExposureAssistant.shutterLabel(r.shutterSec))
+        assertEquals(3.9, r.stopsOff, 0.1)
+        assertTrue(Note.UNDEREXPOSED in r.notes)
+        assertEquals(1600, r.fixIso)
+    }
+
+    @Test fun fixedIsoVideoKeepsIso() {
+        val r = ExposureAssistant.suggest(Input(13.0, 2.8, 0, 25600, 0.0, true, 24.0, 1 / 50.0, Subject.STATIC, false, 50, 1.0, 0, iso = 800))!!
+        assertEquals(800, r.iso)
+        assertEquals(-7.4, r.stopsOff, 0.1)
+        assertTrue(Note.OVEREXPOSED in r.notes)
+        assertEquals(8, r.fixNdStops)
+        assertEquals(100, r.fixIso)
+    }
 }

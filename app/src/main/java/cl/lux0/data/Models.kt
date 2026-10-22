@@ -16,14 +16,16 @@ data class CaptureSettings(
     val stab: Int = 0,
     /** Formato del sensor (factor de recorte); null = el de la cámara. */
     val crop: Double? = null,
+    /** ISO automático: el asistente de exposición elige el ISO; si no, el ISO de la tarjeta queda fijo. */
+    val isoAuto: Boolean = false,
 ) {
     fun toJson(): JSONObject = JSONObject().put("iso", iso).put("fps", fps).put("shutter", shutter)
         .put("fStop", fStop ?: JSONObject.NULL).put("nd", nd).put("ev", ev)
-        .put("focal", focal ?: JSONObject.NULL).put("stab", stab).put("crop", crop ?: JSONObject.NULL)
+        .put("focal", focal ?: JSONObject.NULL).put("stab", stab).put("crop", crop ?: JSONObject.NULL).put("isoAuto", isoAuto)
 
     val label: String
         get() = buildString {
-            append(fpsLabel(fps)).append("p · ").append(shutter).append(" · iso ").append(iso)
+            append(fpsLabel(fps)).append("p · ").append(shutter).append(" · iso ").append(if (isoAuto) "auto" else iso.toString())
             fStop?.let { append(" · f/").append(it) }
             if (nd.isNotBlank()) append(" · ").append(nd)
         }
@@ -39,6 +41,7 @@ data class CaptureSettings(
             focal = if (o.isNull("focal")) null else o.optInt("focal").takeIf { it > 0 },
             stab = o.optInt("stab", 0).coerceIn(0, 8),
             crop = if (o.isNull("crop")) null else o.optDouble("crop").takeIf { it > 0 },
+            isoAuto = o.optBoolean("isoAuto", false),
         )
     }
 }

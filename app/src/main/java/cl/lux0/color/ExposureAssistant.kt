@@ -12,6 +12,8 @@ import kotlin.math.sqrt
  * Foto: la obturación más lenta permitida es la más exigente entre el sujeto (congelar movimiento) y
  * el pulso (1/(focal × formato), con los pasos de estabilización a favor). Se prefiere el ISO más bajo.
  * Video: manda la obturación de la cámara (regla de 180°) y se resuelve el ISO o el ND.
+ * Con ISO fijo (elegido en la tarjeta) el ISO no se toca: en foto se ajusta la obturación, y si no alcanza
+ * se avisa cuánto subir o bajar el ISO; en video solo se informa la diferencia y cómo corregirla.
  */
 object ExposureAssistant {
     enum class Subject(val maxShutterSec: Double) {
@@ -36,6 +38,8 @@ object ExposureAssistant {
         val focalMm: Int?,
         val crop: Double?,
         val stabStops: Int,
+        /** ISO elegido en la tarjeta; null = automático (lo elige el asistente). */
+        val iso: Int? = null,
     )
 
     data class Result(
@@ -48,6 +52,8 @@ object ExposureAssistant {
         val fixAperture: Double? = null,
         val fixNdStops: Int? = null,
         val notes: Set<Note> = emptySet(),
+        /** Con ISO fijo: el ISO que lo arreglaría, si está entre 100 y el máximo de la cámara. */
+        val fixIso: Int? = null,
     )
 
     private fun log2(x: Double) = ln(x) / ln(2.0)
@@ -71,6 +77,14 @@ object ExposureAssistant {
         5000, 6400, 8000, 10000, 12800, 16000, 20000, 25600, 32000, 40000, 51200, 64000, 80000, 102400)
 
     private fun roundIsoUp(iso: Double): Int = ISOS.firstOrNull { it >= iso * 0.94 } ?: ISOS.last()
+    private fun roundIsoDown(iso: Double): Int = ISOS.lastOrNull { it <= iso * 1.06 } ?: ISOS.first()
+
+    /** ISO que compensaría `off` pasos (+ falta luz, − sobra) partiendo de `iso`, dentro de 100..isoMax. */
+    private fun isoFix(iso: Int, off: Double, isoMax: Int): Int? {
+        val want = iso * 2.0.pow(off)
+        val v = if (off > 0) roundIsoUp(want) else roundIsoDown(want)
+        return v.takeIf { it in 100..isoMax && it != iso }
+    }
     private fun nearestShutter(t: Double) = SHUTTERS.minBy { abs(log2(it) - log2(t)) }
 
     /** Obturación más lenta que se puede usar a pulso (null = sin límite, trípode o sin lente). */
@@ -89,6 +103,16 @@ object ExposureAssistant {
         if (i.video) {
             val t = i.cameraShutterSec ?: (1.0 / (2 * i.fps))
             val isoNeed = 100 * 2.0.pow(log2(n * n / t) - ev)
+            i.iso?.let { iso ->
+                val off = log2(isoNeed / iso)
+                return when {
+                    off >= 0.17 -> Result(t, n, iso, off, fixAperture = Exposure.nearestStop(n / sqrt(2.0.pow(off))),
+                        notes = setOf(Note.UNDEREXPOSED), fixIso = isoFix(iso, off, isoMax))
+                    off <= -0.17 -> Result(t, n, iso, off, fixNdStops = Math.ceil(-off - 0.17).toInt().coerceAtLeast(1),
+                        notes = setOf(Note.OVEREXPOSED), fixIso = isoFix(iso, off, isoMax))
+                    else -> Result(t, n, iso, off)
+                }
+            }
             return when {
                 isoNeed > isoMax * 1.06 -> {
                     val off = log2(isoNeed / isoMax)
@@ -107,6 +131,7 @@ object ExposureAssistant {
         var tMax = minOf(hand ?: Double.POSITIVE_INFINITY, subj, 30.0)
         if (hand != null && hand <= subj) notes += Note.HANDHELD_LIMIT else if (subj.isFinite()) notes += Note.SUBJECT_LIMIT
         val tAt100 = n * n / 2.0.pow(ev)
+        i.iso?.let { iso -> return fixedIsoPhoto(tAt100 * 100 / iso, n, iso, tMax, isoMax, notes) }
         if (tAt100 <= tMax) {
             val t = nearestShutter(tAt100)
             if (t < 1 / 8000.0 * 1.06 && tAt100 < 1 / 8000.0) {
@@ -121,5 +146,19 @@ object ExposureAssistant {
         if (isoNeed <= isoMax * 1.06) return Result(tMax, n, roundIsoUp(isoNeed), 0.0, notes = notes)
         val off = log2(isoNeed / isoMax)
         return Result(tMax, n, isoMax, off, fixAperture = Exposure.nearestStop(n / sqrt(2.0.pow(off))), notes = notes + Note.UNDEREXPOSED)
+    }
+
+    /** Foto con ISO fijo: `tNeed` es la obturación que pide la luz a ese ISO. */
+    private fun fixedIsoPhoto(tNeed: Double, n: Double, iso: Int, tMax: Double, isoMax: Int, notes: Set<Note>): Result {
+        if (tNeed < 1 / 8000.0 / 1.06) {
+            val off = log2(tNeed * 8000)                                   // negativo: sobra luz
+            return Result(1 / 8000.0, n, iso, off, fixNdStops = Math.ceil(-off - 0.17).toInt().coerceAtLeast(1),
+                notes = notes + Note.OVEREXPOSED, fixIso = isoFix(iso, off, isoMax))
+        }
+        if (tNeed <= tMax * 1.06) return Result(nearestShutter(tNeed), n, iso, 0.0, notes = notes)
+        val t = nearestShutter(tMax).let { if (it > tMax * 1.06) SHUTTERS.last { s -> s <= tMax * 1.06 } else it }
+        val off = log2(tNeed / t)
+        return Result(t, n, iso, off, fixAperture = Exposure.nearestStop(n / sqrt(2.0.pow(off))),
+            notes = notes + Note.UNDEREXPOSED, fixIso = isoFix(iso, off, isoMax))
     }
 }

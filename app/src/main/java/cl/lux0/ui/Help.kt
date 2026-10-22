@@ -45,7 +45,8 @@ private val HELP_ES = listOf(
         "más lo que elijas: qué apuntas, foto o video, sujeto (fijo, persona, niños/mascotas, deporte, vehículos/aves), a mano o trípode, e intención (clave baja, proteger altas, normal, abrir sombras, clave alta). " +
         "en foto, la obturación más lenta es la más exigente entre el sujeto y el pulso: 1/(focal × formato del sensor), con los pasos de estabilización a favor. " +
         "la focal se elige tal cual dice el lente: la app aplica sola el formato (full frame, aps-c, micro 4/3) de esa cámara. " +
-        "en video manda la obturación de la tarjeta (180°) y el asistente resuelve el iso o el nd. si no alcanza, te dice cuántos pasos faltan o sobran y qué hacer.",
+"en video manda la obturación de la tarjeta (180°) y el asistente resuelve el iso o el nd. si no alcanza, te dice cuántos pasos faltan o sobran y qué hacer. " +
+        "iso: si eliges un valor en la tarjeta queda fijo y el asistente ajusta el resto (y te dice a qué iso subir o bajar si no alcanza); con iso auto lo elige el asistente.",
     "exposición (tecla 2)" to
         "el teléfono mide el círculo y la app calcula el ev de la escena (a iso 100). con los ajustes de cada tarjeta de cámara " +
         "(iso, obturación, nd, ev) te dice qué diafragma usar, o si ya fijaste uno, cuántos pasos sobran o faltan. " +
@@ -142,7 +143,8 @@ private val HELP_EN = listOf(
         "and what you pick: what you aim at, photo or video, subject (still, person, kids/pets, sport, vehicles/birds), handheld or tripod, and intent (low key, protect highlights, normal, open shadows, high key). " +
         "for photos, the slowest shutter is the stricter of the subject and the handheld limit: 1/(focal × sensor format), with stabilization stops in your favor. " +
         "pick the focal length printed on the lens: the app applies that camera's format (full frame, aps-c, micro 4/3) by itself. " +
-        "for video the card's shutter rules (180°) and the assistant solves iso or nd. if it can't fit, it tells you how many stops you are short or over and what to do.",
+"for video the card's shutter rules (180°) and the assistant solves iso or nd. if it can't fit, it tells you how many stops you are short or over and what to do. " +
+        "iso: a value set in the card stays fixed and the assistant adjusts the rest (and tells you which iso to raise or lower to if it can't fit); with auto iso the assistant picks it.",
     "exposure (key 2)" to
         "the phone meters the circle and the app computes the scene ev (at iso 100). using each camera card's settings " +
         "(iso, shutter, nd, ev) it tells you which aperture to use, or, if you already set one, how many stops you are over or under. " +

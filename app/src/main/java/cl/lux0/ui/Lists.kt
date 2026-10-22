@@ -212,7 +212,10 @@ private fun CaptureEditor(vm: MeterViewModel, slot: Int) {
     fun set(n: CaptureSettings) { c = n; vm.setCapture(slot, n) }
     val isoList = CaptureOptions.isoFor(vm.cam(slot).isoMax)
     Column {
-        Picker("iso", c.iso, isoList, { it.toString() }) { set(c.copy(iso = it)) }
+        // 0 = auto: el asistente de exposición elige el iso; cualquier otro valor queda fijo.
+        Picker("iso", if (c.isoAuto) 0 else c.iso, listOf(0) + isoList, { if (it == 0) "auto" else it.toString() }) {
+            set(if (it == 0) c.copy(isoAuto = true) else c.copy(iso = it, isoAuto = false))
+        }
         Picker("fps", c.fps, CaptureOptions.FPS, CaptureOptions::fpsLabel) { set(c.copy(fps = it)) }
         Picker(tr("obturación", "shutter"), c.shutter, CaptureOptions.SHUTTER, { it }) { set(c.copy(shutter = it)) }
         Picker(tr("diafragma", "aperture"), c.fStop, CaptureOptions.F_STOP, CaptureOptions::fLabel) { set(c.copy(fStop = it)) }
@@ -384,7 +387,7 @@ fun CameraCards(vm: MeterViewModel, version: Int) {
                 // Resumen de captura; al tocarlo se edita en una ventana con espacio para el teclado.
                 val cap = if (slot == 1) vm.prefs.cap1 else vm.prefs.cap2
                 Text(
-                    "${cap.iso} iso · ${CaptureOptions.fpsLabel(cap.fps)}p · ${cap.shutter} · ${CaptureOptions.fLabel(cap.fStop)} · ${cap.nd.ifBlank { tr("sin nd", "no nd") }}${cap.focal?.let { f -> " · $f mm" + ((cap.crop ?: cam.crop)?.takeIf { it != 1.0 }?.let { " (≈${Math.round(f * it)} mm eq.)" } ?: "") } ?: ""}${if (cap.ev != 0.0) " · ev " + CaptureOptions.evLabel(cap.ev) else ""}  ✎",
+                    (if (cap.isoAuto) "auto iso · " else "${cap.iso} iso · ") + "${CaptureOptions.fpsLabel(cap.fps)}p · ${cap.shutter} · ${CaptureOptions.fLabel(cap.fStop)} · ${cap.nd.ifBlank { tr("sin nd", "no nd") }}${cap.focal?.let { f -> " · $f mm" + ((cap.crop ?: cam.crop)?.takeIf { it != 1.0 }?.let { " (≈${Math.round(f * it)} mm eq.)" } ?: "") } ?: ""}${if (cap.ev != 0.0) " · ev " + CaptureOptions.evLabel(cap.ev) else ""}  ✎",
                     style = mono(12, p.keyText),
                     modifier = Modifier.fillMaxWidth().padding(top = 2.dp).clickable { editing = slot }.padding(vertical = 2.dp),
                 )
