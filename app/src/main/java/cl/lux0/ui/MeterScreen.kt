@@ -54,7 +54,7 @@ import cl.lux0.color.Reading
 import java.util.Locale
 import kotlin.math.roundToInt
 
-val MODE_NAMES: Map<Int, String> get() = mapOf(1 to "color", 2 to tr("exposición", "exposure"), 3 to "lux", 4 to tr("parpadeo", "flicker"), 5 to tr("comparar", "compare"), 6 to tr("mapa", "map"), 7 to tr("sesiones", "sessions"), 8 to tr("ajustes", "settings"), 9 to tr("calibrar", "calibrate"), 10 to tr("ayuda", "help"))
+val MODE_NAMES: Map<Int, String> get() = mapOf(1 to tr("color", "color", "色"), 2 to tr("exposición", "exposure"), 3 to "lux", 4 to tr("parpadeo", "flicker"), 5 to tr("comparar", "compare"), 6 to tr("mapa", "map"), 7 to tr("sesiones", "sessions"), 8 to tr("ajustes", "settings"), 9 to tr("calibrar", "calibrate"), 10 to tr("ayuda", "help"))
 
 @Composable
 fun Header(mode: Int, theme: String, onTheme: () -> Unit, onHelp: () -> Unit = {}) {
@@ -176,7 +176,7 @@ private fun viewfinderEffect(red: Boolean): RenderEffect =
 /** Nombre visible de un tema (la clave interna sigue en español). */
 fun themeLabel(key: String): String = when (key) {
     "claro" -> tr("claro", "light"); "oscuro" -> tr("oscuro", "dark"); "rojo" -> tr("rojo", "red")
-    else -> "auto"
+    else -> tr("auto", "auto", "自動")
 }
 
 private fun kFraction(k: Double): Float =
@@ -213,7 +213,7 @@ fun DotScale(k: Double?) {
 private fun tintText(duv: Double): String {
     val s = String.format(Locale.US, "%.3f", kotlin.math.abs(duv))
     return when {
-        duv < -0.0005 -> "−$s magenta"
+        duv < -0.0005 -> "−$s " + tr("magenta", "magenta", "マゼンタ")
         duv > 0.0005 -> "+$s " + tr("verde", "green")
         else -> "0.000 " + tr("neutro", "neutral")
     }
@@ -235,7 +235,7 @@ fun BlackScreen(vm: MeterViewModel, st: UiState, modifier: Modifier = Modifier, 
             )
             Spacer(Modifier.weight(1f))
             val status = when {
-                st.demo -> "● demo"
+                st.demo -> tr("● demo", "● demo", "● デモ")
                 st.hot -> tr("■ caliente", "■ hot")
                 st.idle -> tr("■ pausa", "■ paused")
                 st.error != null -> tr("● sin cámara", "● no camera")
@@ -369,6 +369,10 @@ fun CalibrationPanel(vm: MeterViewModel, st: UiState) {
                     "2. in capture one (white balance tool, eyedropper w), lightroom or dpp click the sheet and note the k.\n" +
                     "3. measure the same sheet here (white/gray source) and enter that value.\n" +
                     "note: very bright paper (optical brighteners) may read cooler in daylight.",
+                "1. 光の下に白い紙を置き、カメラで raw 撮影します。\n" +
+                    "2. capture one（ホワイトバランスツール、スポイト w）、lightroom または dpp で紙をクリックし、k を書き留めます。\n" +
+                    "3. 同じ紙をここで測定し（白/グレー）、その値を入力します。\n" +
+                    "注意：とても白い紙（蛍光増白剤入り）は昼光で冷たく読めることがあります。",
             ),
             style = mono(11, p.text), modifier = Modifier.padding(vertical = 8.dp),
         )
@@ -493,7 +497,7 @@ fun LuxPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
         Row {
             Text(tr("sensor de luz frontal", "front light sensor"), style = mono(10, p.screenDim))
             Spacer(Modifier.weight(1f))
-            Text(if (st.demo) "● demo" else if (st.hold) "■ hold" else tr("● en vivo", "● live"), style = mono(10, p.accent))
+            Text(if (st.demo) tr("● demo", "● demo", "● デモ") else if (st.hold) tr("■ hold", "■ hold", "■ ホールド") else tr("● en vivo", "● live"), style = mono(10, p.accent))
         }
         Spacer(Modifier.weight(1f))
         if (!st.luxSensor) {
@@ -607,7 +611,9 @@ fun MapLegend(vm: MeterViewModel) {
             tr("cada celda compara su luz con la referencia: naranja = más cálida, azul = más fría; gris = sin dato (oscura, quemada o de color propio). " +
                 "depende del color de las superficies, así que es una guía rápida.",
                 "each cell compares its light with the reference: orange = warmer, blue = cooler; gray = no data (dark, clipped or colored surface). " +
-                "it depends on surface colors, so it is a quick guide."),
+                "it depends on surface colors, so it is a quick guide.",
+                "各セルの光を基準と比べます：オレンジ = 暖かい、青 = 冷たい、グレー = データなし（暗い、白飛び、表面に色がある）。" +
+                "表面の色に左右されるので、簡易的な目安です。"),
             style = mono(10, p.text), modifier = Modifier.padding(top = 4.dp),
         )
     }

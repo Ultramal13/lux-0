@@ -10,7 +10,7 @@
 
 > **Public beta v0.3.3: looking for beta testers.** 🧪
 > Every tool works and has been tested on a Samsung Galaxy S26 Ultra. We need testing on **more phones and more lights** to validate accuracy.
-> The app is in **English and Spanish** and follows the phone's language.
+> The app is in **English, Spanish and Japanese**. It follows the phone's language, or the one you pick in Settings.
 
 ---
 

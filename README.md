@@ -10,7 +10,7 @@
 
 > **Beta pública v0.3.3 — buscamos betatesters.** 🧪
 > Todas las herramientas funcionan y están probadas en un Samsung Galaxy S26 Ultra. Necesitamos probarla en **más teléfonos y más luces** para validar la precisión.
-> La app está en **español e inglés** y usa el idioma del teléfono.
+> La app está en **español, inglés y japonés**. Usa el idioma del teléfono o el que elijas en Ajustes.
 
 ---
 

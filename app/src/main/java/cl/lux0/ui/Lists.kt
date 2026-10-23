@@ -258,6 +258,15 @@ fun SettingsPanel(vm: MeterViewModel, st: UiState, modifier: Modifier) {
         SettingRow(tr("red eléctrica", "mains frequency")) {
             Seg(listOf("50 hz", "60 hz"), if (vm.prefs.mainsHz == 60) 1 else 0, { vm.prefs.mainsHz = if (it == 1) 60 else 50; vm.bump() })
         }
+        SettingRow(tr("idioma", "language", "言語")) {
+            // Al cambiarlo se recrea la pantalla para que todos los textos salgan en el idioma nuevo.
+            val activity = LocalContext.current as? android.app.Activity
+            val labels = listOf(tr("auto", "auto", "自動"), "español", "english", "日本語")
+            Seg(labels, cl.lux0.I18n.OPTIONS.indexOf(vm.prefs.lang).coerceAtLeast(0), { i ->
+                val pick = cl.lux0.I18n.OPTIONS[i]
+                if (pick != vm.prefs.lang) { vm.prefs.lang = pick; cl.lux0.I18n.choice = pick; activity?.recreate() }
+            })
+        }
         SettingRow(tr("tema", "theme")) {
             val t = listOf("auto", "claro", "oscuro", "rojo")
             Seg(t.map(::themeLabel), t.indexOf(st.theme), { vm.setTheme(t[it]) })

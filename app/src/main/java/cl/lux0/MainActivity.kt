@@ -74,6 +74,7 @@ import cl.lux0.ui.mono
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        cl.lux0.I18n.choice = cl.lux0.data.Prefs(this).lang
         enableEdgeToEdge()
         setContent { App() }
     }
@@ -174,7 +175,7 @@ fun App(vm: MeterViewModel = viewModel()) {
             Spacer(Modifier.height(8.dp))
             KeyGrid(st.mode, { vm.compat.allows(it) }) { vm.setMode(it) }
             Row(Modifier.padding(top = 7.dp), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-                WideKey(if (st.hold) "■ hold" else "hold", false, Modifier.weight(1f)) { vm.toggleHold() }
+                WideKey(if (st.hold) tr("■ hold", "■ hold", "■ ホールド") else tr("hold", "hold", "ホールド"), false, Modifier.weight(1f)) { vm.toggleHold() }
                 WideKey(tr("● guardar", "● save"), true, Modifier.weight(1f)) {
                     vm.save(textureView?.takeIf { it.isAvailable }?.getBitmap(256, 256))
                 }

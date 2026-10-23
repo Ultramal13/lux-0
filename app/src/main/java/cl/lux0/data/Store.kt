@@ -185,6 +185,10 @@ class Prefs(context: Context) {
     var mainsHz: Int
         get() = sp.getInt("mainsHz", 50)
         set(v) = sp.edit().putInt("mainsHz", v).apply()
+    /** Idioma elegido en Ajustes: "auto", "es", "en" o "ja". */
+    var lang: String
+        get() = sp.getString("lang", "auto")!!
+        set(v) = sp.edit().putString("lang", v).apply()
     var theme: String
         get() = sp.getString("theme", "auto")!!
         set(v) = sp.edit().putString("theme", v).apply()
